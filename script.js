@@ -1892,3 +1892,4 @@ async function exportPDF() {
     if (btn) { btn.textContent = 'Exportar PDF'; btn.disabled = false; }
   }
 }
+
