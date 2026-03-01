@@ -37,7 +37,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             await loadCSVData();
         }
         
-        const user = STATE.rawData.find(row => row['E-mail'] === email && row['Matrícula'] === matricula);
+        // CORREÇÃO: Conversão rigorosa de tipos para evitar Type Mismatch e normalização do e-mail
+        const user = STATE.rawData.find(row => 
+            String(row['E-mail']).toLowerCase() === email.toLowerCase() && 
+            String(row['Matrícula']) === matricula
+        );
         
         if (user) {
             STATE.currentUser = user;
