@@ -3,76 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MedDash - Acompanhamento Acadêmico</title>
+    <title>MedDash Analytics | Acompanhamento Acadêmico</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%232563eb%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%2222 12 18 12 15 21 9 3 6 12 2 12%22></polyline></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="style.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
+    
     <main id="login-view" class="view active">
         <div class="login-container">
-            <h1>MedDash</h1>
-            <p>Acompanhamento Longitudinal de Desempenho</p>
-            <form id="login-form">
+            <div class="brand">
+                <div class="brand-logo" aria-hidden="true">
+                    <i data-lucide="activity" stroke-width="2.5"></i>
+                </div>
+                <h1>MedDash</h1>
+                <p>Analytics Acadêmico Longitudinal</p>
+            </div>
+            
+            <form id="login-form" novalidate>
                 <div class="input-group">
                     <label for="email">E-mail Institucional</label>
-                    <input type="email" id="email" required placeholder="ex: aluno@medicina.edu">
+                    <div class="input-wrapper">
+                        <i data-lucide="mail" class="input-icon"></i>
+                        <input type="email" id="email" required placeholder="aluno@medicina.edu" autocomplete="email">
+                    </div>
                 </div>
+                
                 <div class="input-group">
-                    <label for="matricula">Senha (Matrícula)</label>
-                    <input type="password" id="matricula" required placeholder="Sua matrícula">
+                    <label for="matricula">Matrícula</label>
+                    <div class="input-wrapper">
+                        <i data-lucide="hash" class="input-icon"></i>
+                        <input type="text" id="matricula" required placeholder="Sua matrícula" autocomplete="username">
+                    </div>
                 </div>
-                <button type="submit" id="login-btn">Acessar</button>
-                <div id="login-error" class="error-msg hidden">Credenciais inválidas ou erro ao carregar dados.</div>
+                
+                <div id="login-error" class="alert-error hidden" role="alert" aria-live="polite">
+                    <i data-lucide="alert-circle"></i>
+                    <span id="error-text">Credenciais inválidas.</span>
+                </div>
+
+                <button type="submit" id="login-btn" disabled>
+                    <span id="btn-text">Acessar Dashboard</span>
+                    <i data-lucide="loader-2" class="spinner hidden" id="btn-spinner"></i>
+                </button>
             </form>
         </div>
     </main>
 
     <main id="dashboard-view" class="view hidden">
+        
         <header class="dash-header">
-            <div>
-                <h2>Olá, <span id="student-name">Aluno</span></h2>
-                <p>Matrícula: <span id="student-id">000</span></p>
+            <div class="header-brand">
+                <div class="brand-logo small" aria-hidden="true">
+                    <i data-lucide="activity"></i>
+                </div>
+                <h2>MedDash</h2>
             </div>
-            <button id="logout-btn">Sair</button>
+            <div class="user-menu">
+                <span class="user-avatar" id="user-avatar" aria-label="Avatar do Usuário">A</span>
+                <button id="logout-btn" aria-label="Sair do sistema" title="Sair">
+                    <i data-lucide="log-out"></i>
+                </button>
+            </div>
         </header>
 
-        <div class="dashboard-grid">
-            <section class="kpi-cards">
-                <div class="card">
-                    <h3>Coeficiente de Rendimento (CR)</h3>
-                    <div class="kpi-value" id="kpi-cr">0.0</div>
-                </div>
-                <div class="card">
-                    <h3>Posição na Turma</h3>
-                    <div class="kpi-value" id="kpi-rank">0º</div>
-                    <p class="kpi-sub" id="kpi-percentile">Top 0%</p>
-                </div>
-                <div class="card">
-                    <h3>Tendência Global</h3>
-                    <div class="kpi-value" id="kpi-trend">-</div>
-                    <p class="kpi-sub">Último período vs Média Histórica</p>
-                </div>
+        <div class="dashboard-content">
+            
+            <section class="welcome-section" aria-labelledby="welcome-name">
+                <h1 id="welcome-name">Olá, Aluno</h1>
+                <p class="text-muted">Matrícula: <span id="welcome-id" class="font-bold">0000000</span></p>
             </section>
 
-            <section class="charts-container">
-                <div class="chart-card">
-                    <h3>Evolução Longitudinal por Período</h3>
-                    <canvas id="evolutionChart"></canvas>
+            <section class="kpi-grid" aria-label="Indicadores de Performance">
+                <article class="kpi-card">
+                    <header>
+                        <h3>CR Global</h3>
+                        <i data-lucide="graduation-cap" class="text-muted"></i>
+                    </header>
+                    <div class="kpi-value" id="val-cr">0.00</div>
+                    <p class="kpi-subtitle">Média acumulada total</p>
+                </article>
+                
+                <article class="kpi-card">
+                    <header>
+                        <h3>Posição na Turma</h3>
+                        <i data-lucide="trophy" class="text-muted"></i>
+                    </header>
+                    <div class="kpi-value" id="val-rank">0º</div>
+                    <p class="kpi-subtitle" id="val-total-students">de 0 alunos</p>
+                </article>
+
+                <article class="kpi-card">
+                    <header>
+                        <h3>Percentil</h3>
+                        <i data-lucide="pie-chart" class="text-muted"></i>
+                    </header>
+                    <div class="kpi-value" id="val-percentile">0%</div>
+                    <p class="kpi-subtitle">Você está entre os melhores</p>
+                </article>
+
+                <article class="kpi-card">
+                    <header>
+                        <h3>Tendência</h3>
+                        <div id="trend-icon-container"></div>
+                    </header>
+                    <div class="kpi-value" id="val-trend-text">-</div>
+                    <p class="kpi-subtitle" id="val-trend-diff">Último período vs Geral</p>
+                </article>
+            </section>
+
+            <section class="charts-grid" aria-label="Gráficos de Desempenho">
+                
+                <div class="chart-wrapper full-width">
+                    <header class="chart-header">
+                        <div>
+                            <h3>Evolução por Período</h3>
+                            <p class="text-muted text-sm">Sua trajetória acadêmica longitudinal ao longo do curso.</p>
+                        </div>
+                    </header>
+                    <div class="chart-container">
+                        <canvas id="evolutionChart" aria-label="Gráfico de linha mostrando a evolução do seu CR"></canvas>
+                    </div>
                 </div>
-                <div class="chart-card">
-                    <h3>Curva de Crescimento Acadêmico (Desvio Padrão)</h3>
-                    <p class="chart-desc">Sua nota em relação à normalidade da turma (+/- 1 DP).</p>
-                    <canvas id="growthChart"></canvas>
+
+                <div class="chart-wrapper">
+                    <header class="chart-header">
+                        <div>
+                            <h3>Curva de Crescimento</h3>
+                            <p class="text-muted text-sm">Sua nota vs Faixa de normalidade da turma.</p>
+                        </div>
+                    </header>
+                    <div class="chart-container">
+                        <canvas id="growthChart" aria-label="Gráfico mostrando sua nota dentro do desvio padrão da turma"></canvas>
+                    </div>
                 </div>
-                <div class="chart-card full-width">
-                    <h3>Distribuição da Turma (Anônima)</h3>
-                    <p class="chart-desc">Onde você se encontra no montante geral (CR global).</p>
-                    <canvas id="distributionChart"></canvas>
+
+                <div class="chart-wrapper">
+                    <header class="chart-header">
+                        <div>
+                            <h3>Distribuição da Turma</h3>
+                            <p class="text-muted text-sm">Comparação anônima de CR Global.</p>
+                        </div>
+                    </header>
+                    <div class="chart-container">
+                        <canvas id="distributionChart" aria-label="Gráfico de dispersão comparando seu CR com o resto da turma"></canvas>
+                    </div>
                 </div>
+
             </section>
         </div>
     </main>
+
     <script src="script.js"></script>
 </body>
 </html>
