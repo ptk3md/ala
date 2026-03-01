@@ -35,7 +35,8 @@ const errorEl = document.getElementById('login-error');
 
 function validateForm() {
     if (!loginBtn) return;
-    const isValid = emailInput.value.includes('@') && matriculaInput.value.length >= 4;
+    const isTestMode = emailInput.value.toLowerCase() === 'teste' && matriculaInput.value === 'teste';
+    const isValid = (emailInput.value.includes('@') && matriculaInput.value.length >= 4) || isTestMode;
     loginBtn.disabled = !isValid;
 }
 
@@ -115,12 +116,13 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
 
 async function loadCSVData() {
     return new Promise((resolve, reject) => {
-        // Alterado para ler a nova planilha com 200 alunos gerada no passo anterior
+        // OTIMIZAÇÃO: worker: true faz o processamento em background (não congela a UI para milhões de linhas)
         Papa.parse('Planilha_Academica_Medicina.csv', {
             download: true,
             header: true,
             dynamicTyping: true,
             skipEmptyLines: true,
+            worker: true, 
             complete: (results) => {
                 STATE.rawData = results.data;
                 resolve();
@@ -131,24 +133,16 @@ async function loadCSVData() {
 }
 
 // ==========================================
-// 2. PROCESSAMENTO DE DADOS (PERCENTIL CORRIGIDO)
+// 2. PROCESSAMENTO ALTA PERFORMANCE O(N)
 // ==========================================
-
-function calculateStats(arr) {
-    const validArr = arr.filter(n => typeof n === 'number' && !isNaN(n));
-    if (validArr.length === 0) return { mean: 0, stdDev: 0 };
-    const mean = validArr.reduce((a, b) => a + b, 0) / validArr.length;
-    const variance = validArr.reduce((sq, n) => sq + Math.pow(n - mean, 2), 0) / (validArr.length - 1 || 1);
-    return { mean, stdDev: Math.sqrt(variance) };
-}
 
 function processDashboardData() {
     const user = STATE.currentUser;
     const allUsers = STATE.rawData;
-    const keys = Object.keys(user);
+    const totalUsers = allUsers.length;
+    
     const periodsMap = {}; 
-
-    keys.forEach(key => {
+    Object.keys(user).forEach(key => {
         const match = key.match(/\((\d+)º Período\)/);
         if (match) {
             const p = parseInt(match[1], 10);
@@ -158,52 +152,85 @@ function processDashboardData() {
     });
 
     const periods = Object.keys(periodsMap).map(Number).sort((a, b) => a - b);
-    const statsPerPeriod = [];
-    let userTotalGrades = [];
-    let cohortCRs = [];
+    
+    // OTIMIZAÇÃO DE MEMÓRIA: Usando TypedArray ao invés de Objetos
+    const cohortCRs = new Float32Array(totalUsers); 
+    
+    const periodAcc = {};
+    periods.forEach(p => periodAcc[p] = { sum: 0, sumSq: 0, count: 0 });
 
-    // Calcula CR de toda a turma
-    allUsers.forEach(u => {
-        let uTotalGrades = [];
-        periods.forEach(p => periodsMap[p].forEach(sub => {
-            if (typeof u[sub] === 'number') uTotalGrades.push(u[sub]);
-        }));
-        const cr = uTotalGrades.length ? (uTotalGrades.reduce((a,b)=>a+b,0)/uTotalGrades.length) : 0;
-        cohortCRs.push({ matricula: String(u['Matrícula']), cr });
+    let userCR = 0;
+    const userPeriodMeans = {};
+    const userMatricula = String(user['Matrícula']);
+
+    // OTIMIZAÇÃO DE TEMPO: Loop de Passagem Única O(N) para Extrair TUDO (Média, Variância e Notas)
+    for (let i = 0; i < totalUsers; i++) {
+        const u = allUsers[i];
+        const isUser = String(u['Matrícula']) === userMatricula;
+        
+        let uTotalSum = 0;
+        let uTotalCount = 0;
+
+        for (let pIdx = 0; pIdx < periods.length; pIdx++) {
+            const p = periods[pIdx];
+            const subjects = periodsMap[p];
+            let pSum = 0;
+            let pCount = 0;
+            
+            for (let sIdx = 0; sIdx < subjects.length; sIdx++) {
+                const grade = u[subjects[sIdx]];
+                if (typeof grade === 'number') {
+                    pSum += grade;
+                    pCount++;
+                }
+            }
+
+            if (pCount > 0) {
+                const pMean = pSum / pCount;
+                periodAcc[p].sum += pMean;
+                periodAcc[p].sumSq += (pMean * pMean);
+                periodAcc[p].count++;
+                
+                if (isUser) userPeriodMeans[p] = pMean;
+            }
+            
+            uTotalSum += pSum;
+            uTotalCount += pCount;
+        }
+
+        const cr = uTotalCount > 0 ? (uTotalSum / uTotalCount) : 0;
+        cohortCRs[i] = cr;
+        
+        if (isUser) userCR = cr;
+    }
+
+    // OTIMIZAÇÃO DE SORTING: Rank O(N) (Não usamos mais o .sort() que custa O(N log N))
+    let userRank = 1;
+    for (let i = 0; i < totalUsers; i++) {
+        if (cohortCRs[i] > userCR) userRank++;
+    }
+
+    // Calcula Desvio Padrão final baseado nos acumuladores
+    const statsPerPeriod = periods.map(p => {
+        const acc = periodAcc[p];
+        const cohortMean = acc.count > 0 ? (acc.sum / acc.count) : 0;
+        let variance = 0;
+        if (acc.count > 1) {
+            variance = (acc.sumSq - ((acc.sum * acc.sum) / acc.count)) / (acc.count - 1);
+        }
+        return {
+            period: p,
+            studentMean: userPeriodMeans[p] || 0,
+            cohortMean: cohortMean,
+            cohortStdDev: Math.sqrt(Math.max(0, variance))
+        };
     });
 
-    // Evolução Histórica
-    periods.forEach(p => {
-        const subjects = periodsMap[p];
-        const userGrades = subjects.map(sub => user[sub]).filter(g => typeof g === 'number');
-        const userPeriodMean = userGrades.length ? userGrades.reduce((a,b)=>a+b,0)/userGrades.length : 0;
-        userTotalGrades.push(...userGrades);
-
-        const cohortPeriodGrades = [];
-        allUsers.forEach(u => {
-            const uGrades = subjects.map(sub => u[sub]).filter(g => typeof g === 'number');
-            if (uGrades.length) cohortPeriodGrades.push(uGrades.reduce((a,b)=>a+b,0)/uGrades.length);
-        });
-
-        const cohortStats = calculateStats(cohortPeriodGrades);
-        statsPerPeriod.push({ period: p, studentMean: userPeriodMean, cohortMean: cohortStats.mean, cohortStdDev: cohortStats.stdDev });
-    });
-
-    const userCR = userTotalGrades.reduce((a,b)=>a+b,0) / userTotalGrades.length;
-    
-    // Rank e Percentil Estatístico (CORRIGIDO)
-    cohortCRs.sort((a, b) => b.cr - a.cr); // Decrescente (1º é o maior CR)
-    const userRank = cohortCRs.findIndex(c => c.matricula === String(user['Matrícula'])) + 1;
-    const totalStudents = cohortCRs.length;
-    
-    // Percentil = (Pessoas que o utilizador superou / Total de Pessoas) * 100
-    // Ex: Rank 197 de 200 = superou 3 pessoas = (3/200)*100 = 1.5% -> Percentil 2
-    const userPercentile = Math.round(((totalStudents - userRank) / totalStudents) * 100);
-
+    const userPercentile = Math.round(((totalUsers - userRank) / totalUsers) * 100);
     const lastPeriodMean = statsPerPeriod[statsPerPeriod.length - 1]?.studentMean || 0;
 
     return {
-        statsPerPeriod, userCR, userRank, totalStudents,
+        statsPerPeriod, userCR, userRank, totalStudents: totalUsers,
         userPercentile, trendDiff: lastPeriodMean - userCR, cohortCRs
     };
 }
@@ -249,7 +276,6 @@ function renderKPIs(data) {
     document.getElementById('val-rank').textContent = `${data.userRank}º`;
     document.getElementById('val-total-students').textContent = `de ${data.totalStudents} alunos`;
     
-    // Atualização Semântica do Percentil
     const percentilEl = document.getElementById('val-percentile');
     percentilEl.textContent = `P${data.userPercentile}`;
     percentilEl.nextElementSibling.textContent = `Acima de ${data.userPercentile}% da turma`;
@@ -329,7 +355,7 @@ function renderCharts(data) {
         options: { ...commonOptions, plugins: { ...commonOptions.plugins, legend: { labels: { filter: (item) => !item.text.includes('Desvio Padrão') } } } }
     }));
 
-    // 3. Distribuição (UX Nova: HISTOGRAMA)
+    // 3. Distribuição (Histograma O(N) Tracking)
     const faixas = [
         { label: '< 5.0', min: 0, max: 4.99 },
         { label: '5.0 - 5.4', min: 5.0, max: 5.49 },
@@ -344,25 +370,28 @@ function renderCharts(data) {
         { label: '9.5 - 10', min: 9.5, max: 10.0 }
     ];
 
-    const histogramData = Array(faixas.length).fill(0);
+    const histogramData = new Int32Array(faixas.length);
     let userFaixaIndex = -1;
 
-    // Agrupa os alunos nas faixas
-    data.cohortCRs.forEach(c => {
+    // Localiza a faixa do usuário instantaneamente
+    for(let i=0; i<faixas.length; i++) {
+        if (data.userCR >= faixas[i].min && data.userCR <= faixas[i].max) {
+            userFaixaIndex = i; break;
+        }
+    }
+
+    // Preenche o Histograma de forma veloz
+    for(let j=0; j<data.cohortCRs.length; j++) {
+        const cr = data.cohortCRs[j];
         for(let i=0; i<faixas.length; i++) {
-            if (c.cr >= faixas[i].min && c.cr <= faixas[i].max) {
-                histogramData[i]++;
-                if (c.matricula === String(STATE.currentUser['Matrícula'])) {
-                    userFaixaIndex = i;
-                }
-                break;
+            if (cr >= faixas[i].min && cr <= faixas[i].max) {
+                histogramData[i]++; break;
             }
         }
-    });
+    }
 
-    // Colorir barras dinamicamente
-    const bgColors = histogramData.map((_, i) => i === userFaixaIndex ? colorStudent : getCSSVar('--surface-subtle') || '#e2e8f0');
-    const borderColors = histogramData.map((_, i) => i === userFaixaIndex ? getCSSVar('--primary-hover') || '#1d4ed8' : colorGrid);
+    const bgColors = Array.from(histogramData).map((_, i) => i === userFaixaIndex ? colorStudent : getCSSVar('--surface-subtle') || '#e2e8f0');
+    const borderColors = Array.from(histogramData).map((_, i) => i === userFaixaIndex ? getCSSVar('--primary-hover') || '#1d4ed8' : colorGrid);
 
     const ctxDist = document.getElementById('distributionChart').getContext('2d');
     STATE.chartInstances.push(new Chart(ctxDist, {
@@ -371,7 +400,7 @@ function renderCharts(data) {
             labels: faixas.map(f => f.label),
             datasets: [{
                 label: 'Número de Alunos',
-                data: histogramData,
+                data: Array.from(histogramData), // ChartJS precisa de Array padrão
                 backgroundColor: bgColors,
                 borderColor: borderColors,
                 borderWidth: 1,
