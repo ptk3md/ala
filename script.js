@@ -116,7 +116,7 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
 async function loadCSVData() {
     return new Promise((resolve, reject) => {
         // Alterado para ler a nova planilha com 200 alunos gerada no passo anterior
-        Papa.parse('Planilha_Academica_Medicina_Atualizada.csv', {
+        Papa.parse('Planilha_Academica_Medicina.csv', {
             download: true,
             header: true,
             dynamicTyping: true,
