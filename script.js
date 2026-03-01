@@ -17,14 +17,12 @@ document.head.appendChild(fontLink);
 
 const styleTag = document.createElement('style');
 styleTag.innerHTML = `
-  /* ─── TOKENS ─────────────────────────────────── */
   :root {
     --bg:           #f5f6fa;
     --surface:      #ffffff;
     --surface-2:    #f0f2f7;
     --border:       #e2e5ef;
     --border-focus: #4361ee;
-
     --primary:      #4361ee;
     --primary-dim:  rgba(67,97,238,.10);
     --teal:         #0096c7;
@@ -35,386 +33,170 @@ styleTag.innerHTML = `
     --red-dim:      rgba(224,82,82,.10);
     --amber:        #d97706;
     --amber-dim:    rgba(217,119,6,.10);
-
     --text:         #1a1d2e;
     --text-2:       #5a607a;
     --text-3:       #9299b0;
-
     --radius-sm:    6px;
     --radius:       10px;
     --radius-lg:    16px;
     --shadow-sm:    0 1px 3px rgba(26,29,46,.07), 0 1px 2px rgba(26,29,46,.04);
     --shadow:       0 4px 16px rgba(26,29,46,.08), 0 1px 4px rgba(26,29,46,.04);
     --shadow-lg:    0 8px 32px rgba(26,29,46,.10), 0 2px 8px rgba(26,29,46,.06);
-
-    --font:         'Sora', sans-serif;
-    --mono:         'IBM Plex Mono', monospace;
-    --t-base:       0.875rem;
-    --t-sm:         0.8125rem;
-    --t-xs:         0.75rem;
+    --font:  'Sora', sans-serif;
+    --mono:  'IBM Plex Mono', monospace;
+    --t-base: 0.875rem;
+    --t-sm:   0.8125rem;
+    --t-xs:   0.75rem;
   }
-
-  /* ─── RESET & BASE ────────────────────────────── */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   body.med-light {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    font-size: var(--t-base);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font); font-size: var(--t-base);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
   }
-
-  /* ─── LAYOUT ──────────────────────────────────── */
-  .layout {
-    display: flex;
-    min-height: 100vh;
-  }
-
+  .layout { display: flex; min-height: 100vh; }
   .sidebar {
-    width: 220px;
-    flex-shrink: 0;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 1.5rem 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: .75rem;
-    position: fixed;
-    height: 100vh;
-    overflow-y: auto;
-    z-index: 100;
+    width: 220px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border); padding: 1.5rem 1rem;
+    display: flex; flex-direction: column; gap: .75rem;
+    position: fixed; height: 100vh; overflow-y: auto; z-index: 100;
   }
-
-  .main {
-    margin-left: 220px;
-    flex: 1;
-    padding: 2rem 2.5rem;
-    max-width: 1400px;
-  }
-
-  /* ─── SIDEBAR COMPONENTS ──────────────────────── */
-  .sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: .5rem .75rem;
-    margin-bottom: .75rem;
-  }
-  .sidebar-brand-icon {
-    width: 32px; height: 32px;
-    background: var(--primary);
-    border-radius: var(--radius-sm);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff;
-  }
-  .sidebar-brand-name {
-    font-size: 1.0625rem;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: -.3px;
-  }
-
-  .sidebar-profile {
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1rem;
-    margin-bottom: .5rem;
-  }
-  .sidebar-avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: var(--primary);
-    color: #fff;
-    display: flex; align-items: center; justify-content: center;
-    font-family: var(--mono);
-    font-size: 1.125rem;
-    font-weight: 500;
-    margin-bottom: .625rem;
-  }
-  .sidebar-name {
-    font-size: var(--t-sm);
-    font-weight: 600;
-    line-height: 1.3;
-    color: var(--text);
-  }
-  .sidebar-id {
-    font-family: var(--mono);
-    font-size: var(--t-xs);
-    color: var(--text-3);
-    margin-top: 2px;
-  }
-  .badge-pct {
-    display: inline-flex;
-    margin-top: .5rem;
-    padding: 2px 8px;
-    border-radius: 99px;
-    background: var(--green-dim);
-    color: var(--green);
-    font-size: var(--t-xs);
-    font-weight: 600;
-  }
-
-  .nav-link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: .625rem .875rem;
-    border-radius: var(--radius-sm);
-    text-decoration: none;
-    font-size: var(--t-sm);
-    font-weight: 500;
-    color: var(--text-2);
-    transition: background .15s, color .15s;
-  }
-  .nav-link:hover { background: var(--surface-2); color: var(--text); }
+  .main { margin-left: 220px; flex: 1; padding: 2rem 2.5rem; max-width: 1400px; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: .5rem .75rem; margin-bottom: .75rem; }
+  .sidebar-brand-icon { width: 32px; height: 32px; background: var(--primary); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: #fff; }
+  .sidebar-brand-name { font-size: 1.0625rem; font-weight: 700; color: var(--text); letter-spacing: -.3px; }
+  .sidebar-profile { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: .5rem; }
+  .sidebar-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 1.125rem; font-weight: 500; margin-bottom: .625rem; }
+  .sidebar-name { font-size: var(--t-sm); font-weight: 600; line-height: 1.3; color: var(--text); }
+  .sidebar-id   { font-family: var(--mono); font-size: var(--t-xs); color: var(--text-3); margin-top: 2px; }
+  .badge-pct    { display: inline-flex; margin-top: .5rem; padding: 2px 8px; border-radius: 99px; background: var(--green-dim); color: var(--green); font-size: var(--t-xs); font-weight: 600; }
+  .nav-link { display: flex; align-items: center; gap: 10px; padding: .625rem .875rem; border-radius: var(--radius-sm); text-decoration: none; font-size: var(--t-sm); font-weight: 500; color: var(--text-2); transition: background .15s, color .15s; }
+  .nav-link:hover  { background: var(--surface-2); color: var(--text); }
   .nav-link.active { background: var(--primary-dim); color: var(--primary); }
-
-  /* ─── CARDS ───────────────────────────────────── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
-    padding: 1.5rem;
-    transition: box-shadow .2s;
-  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); padding: 1.5rem; transition: box-shadow .2s; }
   .card:hover { box-shadow: var(--shadow); }
-
-  .card-title {
-    font-size: var(--t-sm);
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 1rem;
-    letter-spacing: -.2px;
-  }
-
-  /* ─── KPI CARDS ───────────────────────────────── */
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.75rem;
-  }
-  .kpi-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem;
-    box-shadow: var(--shadow-sm);
-    position: relative;
-    overflow: hidden;
-  }
-  .kpi-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  }
+  .card-title { font-size: var(--t-sm); font-weight: 600; color: var(--text); margin-bottom: 1rem; letter-spacing: -.2px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.75rem; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+  .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
   .kpi-card.primary::before { background: var(--primary); }
   .kpi-card.green::before   { background: var(--green); }
   .kpi-card.teal::before    { background: var(--teal); }
   .kpi-card.amber::before   { background: var(--amber); }
-
-  .kpi-label {
-    font-size: var(--t-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .7px;
-    color: var(--text-3);
-    margin-bottom: .375rem;
-  }
-  .kpi-value {
-    font-family: var(--mono);
-    font-size: 2rem;
-    font-weight: 500;
-    letter-spacing: -1px;
-    color: var(--text);
-    line-height: 1;
-    margin-bottom: .375rem;
-  }
-  .kpi-sub {
-    font-size: var(--t-xs);
-    color: var(--text-3);
-  }
-
-  /* ─── CHART WRAPPERS ──────────────────────────── */
-  .chart-section {
-    display: grid;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
+  .kpi-label { font-size: var(--t-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text-3); margin-bottom: .375rem; }
+  .kpi-value { font-family: var(--mono); font-size: 2rem; font-weight: 500; letter-spacing: -1px; color: var(--text); line-height: 1; margin-bottom: .375rem; }
+  .kpi-sub   { font-size: var(--t-xs); color: var(--text-3); }
+  .chart-section { display: grid; gap: 1rem; margin-bottom: 1.5rem; }
   .chart-section.cols-2-1 { grid-template-columns: 2fr 1fr; }
   .chart-section.cols-2   { grid-template-columns: 1fr 1fr; }
-  .chart-section.cols-3   { grid-template-columns: repeat(3,1fr); }
-
   .chart-wrap { position: relative; }
   .chart-wrap canvas { display: block; }
-
-  /* ─── INSIGHTS ────────────────────────────────── */
-  .insight-strip {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.75rem;
-  }
-  .insight {
-    padding: .875rem 1rem;
-    border-radius: var(--radius);
-    border-left: 3px solid;
-    font-size: var(--t-sm);
-  }
-  .insight.green  { background: var(--green-dim);  border-color: var(--green);  }
-  .insight.red    { background: var(--red-dim);    border-color: var(--red);    }
-  .insight.teal   { background: var(--teal-dim);   border-color: var(--teal);   }
-  .insight-head {
-    font-weight: 600;
-    margin-bottom: .25rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--t-xs);
-    text-transform: uppercase;
-    letter-spacing: .5px;
-  }
+  .insight-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.75rem; }
+  .insight { padding: .875rem 1rem; border-radius: var(--radius); border-left: 3px solid; font-size: var(--t-sm); }
+  .insight.green { background: var(--green-dim); border-color: var(--green); }
+  .insight.red   { background: var(--red-dim);   border-color: var(--red);   }
+  .insight.teal  { background: var(--teal-dim);  border-color: var(--teal);  }
+  .insight-head  { font-weight: 600; margin-bottom: .25rem; display: flex; align-items: center; gap: 6px; font-size: var(--t-xs); text-transform: uppercase; letter-spacing: .5px; }
   .insight.green .insight-head { color: var(--green); }
-  .insight.red   .insight-head { color: var(--red);   }
-  .insight.teal  .insight-head { color: var(--teal);  }
+  .insight.red   .insight-head { color: var(--red); }
+  .insight.teal  .insight-head { color: var(--teal); }
   .insight-body { color: var(--text); line-height: 1.5; }
 
-  /* ─── HEATMAP ─────────────────────────────────── */
+  /* ── FILTER BAR ──────────────────────────────── */
+  .filter-bar {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem; display: flex; align-items: flex-start;
+    gap: 1.5rem; flex-wrap: wrap; box-shadow: var(--shadow-sm);
+  }
+  .filter-group { display: flex; flex-direction: column; gap: .375rem; min-width: 0; }
+  .filter-label { font-size: var(--t-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-3); }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: .375rem; }
+  .chip {
+    display: inline-flex; align-items: center; padding: 4px 12px;
+    border-radius: 99px; border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text-2);
+    font-size: var(--t-xs); font-weight: 600; cursor: pointer;
+    transition: all .15s; user-select: none; white-space: nowrap;
+    font-family: var(--font);
+  }
+  .chip:hover  { border-color: var(--primary); color: var(--primary); background: var(--primary-dim); }
+  .chip.active { border-color: var(--primary); background: var(--primary-dim); color: var(--primary); }
+  .filter-sep { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; }
+  .filter-summary { margin-left: auto; align-self: center; font-size: var(--t-xs); color: var(--text-3); white-space: nowrap; }
+  .filter-summary strong { color: var(--primary); }
+  .filter-reset {
+    align-self: center; display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 12px; border-radius: 99px; border: 1.5px solid var(--border);
+    background: transparent; color: var(--text-3); font-size: var(--t-xs);
+    font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap;
+    font-family: var(--font);
+  }
+  .filter-reset:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+  /* ── EMPTY STATE ─────────────────────────────── */
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-3); }
+  .empty-state svg { margin: 0 auto .75rem; display: block; opacity: .4; }
+  .empty-state p { font-size: var(--t-sm); }
+
+  /* ── HEATMAP ─────────────────────────────────── */
   .heatmap-wrap { overflow-x: auto; margin-top: .5rem; }
-  .heatmap-grid {
-    display: grid;
-    gap: 3px;
-    min-width: max-content;
-  }
-  .hm-header {
-    font-family: var(--mono);
-    font-size: var(--t-xs);
-    color: var(--text-3);
-    text-align: center;
-    padding: 2px;
-  }
-  .hm-row-label {
-    font-size: var(--t-xs);
-    color: var(--text-2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    padding-right: 8px;
-    display: flex;
-    align-items: center;
-  }
-  .hm-cell {
-    width: 38px; height: 38px;
-    border-radius: 4px;
-    font-family: var(--mono);
-    font-size: 10px;
-    font-weight: 500;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s;
-    position: relative;
-  }
-  .hm-cell:hover {
-    transform: scale(1.15);
-    z-index: 10;
-    box-shadow: var(--shadow);
-  }
+  .heatmap-grid { display: grid; gap: 3px; min-width: max-content; }
+  .hm-header    { font-family: var(--mono); font-size: var(--t-xs); color: var(--text-3); text-align: center; padding: 2px; }
+  .hm-row-label { font-size: var(--t-xs); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 8px; display: flex; align-items: center; }
+  .hm-cell { width: 38px; height: 38px; border-radius: 4px; font-family: var(--mono); font-size: 10px; font-weight: 500; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform .15s, box-shadow .15s; position: relative; }
+  .hm-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: var(--shadow); }
   .hm-cell.empty     { background: var(--surface-2); }
   .hm-cell.grade-hi  { background: #2d9d78; color: #fff; }
   .hm-cell.grade-mid { background: #0096c7; color: #fff; }
   .hm-cell.grade-low { background: #e05252; color: #fff; }
 
-  /* ─── TABLE ───────────────────────────────────── */
+  /* ── TABLE ───────────────────────────────────── */
   .data-table { width: 100%; border-collapse: collapse; }
   .data-table th {
-    font-size: var(--t-xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .6px;
-    color: var(--text-3);
-    border-bottom: 2px solid var(--border);
-    padding: .875rem 1rem;
-    text-align: left;
+    font-size: var(--t-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .6px;
+    color: var(--text-3); border-bottom: 2px solid var(--border); padding: .875rem 1rem;
+    text-align: left; cursor: pointer; user-select: none; white-space: nowrap;
   }
-  .data-table td {
-    padding: .75rem 1rem;
-    border-bottom: 1px solid var(--border);
-    font-size: var(--t-sm);
-    vertical-align: middle;
-  }
+  .data-table th:hover { color: var(--text-2); }
+  .data-table th .sort-icon { margin-left: 4px; opacity: .4; font-style: normal; }
+  .data-table th.sorted .sort-icon { opacity: 1; color: var(--primary); }
+  .data-table td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); font-size: var(--t-sm); vertical-align: middle; }
   .data-table td.mono { font-family: var(--mono); }
   .data-table tr:last-child td { border-bottom: none; }
   .data-table tr:hover td { background: var(--bg); }
-  .badge {
-    display: inline-flex;
-    padding: 2px 9px;
-    border-radius: 99px;
-    font-size: var(--t-xs);
-    font-weight: 600;
-  }
+  .badge { display: inline-flex; padding: 2px 9px; border-radius: 99px; font-size: var(--t-xs); font-weight: 600; }
   .badge.ok  { background: var(--green-dim); color: var(--green); }
   .badge.bad { background: var(--red-dim);   color: var(--red);   }
 
-  /* ─── UPLOAD UI ───────────────────────────────── */
-  .dropzone {
-    border: 1.5px dashed var(--border-focus);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    text-align: center;
-    cursor: pointer;
-    background: var(--primary-dim);
-    transition: background .15s;
-    font-size: var(--t-sm);
-  }
+  /* ── UPLOAD UI ───────────────────────────────── */
+  .dropzone { border: 1.5px dashed var(--border-focus); border-radius: var(--radius); padding: 1.25rem; text-align: center; cursor: pointer; background: var(--primary-dim); transition: background .15s; font-size: var(--t-sm); }
   .dropzone:hover { background: rgba(67,97,238,.15); }
-  .upload-status { font-size: var(--t-xs); margin-top: .5rem; text-align: center; font-weight: 600; }
-
-  /* ─── PAGE HEADER ──────────────────────────────── */
+  .upload-status  { font-size: var(--t-xs); margin-top: .5rem; text-align: center; font-weight: 600; }
   .page-header { margin-bottom: 1.75rem; }
-  .page-title {
-    font-size: 1.625rem;
-    font-weight: 700;
-    letter-spacing: -.5px;
-    color: var(--text);
-  }
-  .page-sub { font-size: var(--t-sm); color: var(--text-3); margin-top: 2px; }
+  .page-title  { font-size: 1.625rem; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
+  .page-sub    { font-size: var(--t-sm); color: var(--text-3); margin-top: 2px; }
 
-  /* ─── SECTION HEADING ─────────────────────────── */
-  .section-head {
-    font-size: var(--t-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    color: var(--text-3);
-    padding-bottom: .625rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  /* ─── ANIMATIONS ──────────────────────────────── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   .fade-1 { animation: fadeUp .45s ease-out .00s both; }
   .fade-2 { animation: fadeUp .45s ease-out .07s both; }
   .fade-3 { animation: fadeUp .45s ease-out .14s both; }
   .fade-4 { animation: fadeUp .45s ease-out .21s both; }
   .fade-5 { animation: fadeUp .45s ease-out .28s both; }
 
-  /* ─── DIVIDER ──────────────────────────────────── */
-  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
-
-  /* ─── SCROLLBAR ────────────────────────────────── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  @media (max-width: 1024px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; padding: 1.5rem; }
+    .chart-section.cols-2-1,
+    .chart-section.cols-2 { grid-template-columns: 1fr; }
+    .filter-bar { gap: 1rem; }
+    .filter-sep { display: none; }
+    .insight-strip { grid-template-columns: 1fr; }
+  }
 `;
 document.head.appendChild(styleTag);
 
@@ -423,57 +205,56 @@ document.head.appendChild(styleTag);
 // ==========================================
 
 const STATE = {
-  rawDataMap: new Map(),
-  currentUser: null,
-  chartInstances: [],
+  rawDataMap:    new Map(),
+  currentUser:   null,
+  fullData:      null,
+  activeFilters: {
+    periods:    new Set(),   // vazio = todos
+    categories: new Set(),   // vazio = todas
+  },
+  tableSort: { key: 'period', dir: 'desc' },
 };
 
+const CAT_LABELS = ['Básicas', 'Clínica', 'Cirurgia', 'Saúde Pública', 'Humanidades'];
+
+// Instâncias de gráficos ativos
+const _charts = {};
+
 // ==========================================
-// SHARED CHART DEFAULTS (UX/UI normalized)
+// CHART DEFAULTS
 // ==========================================
 
 function applyChartDefaults() {
   Chart.defaults.font.family = "'Sora', sans-serif";
-  Chart.defaults.font.size = 12;
-  Chart.defaults.color = '#5a607a';
-
-  // Tooltip — normalized for readability
-  Chart.defaults.plugins.tooltip.backgroundColor = '#1a1d2e';
-  Chart.defaults.plugins.tooltip.titleColor = '#ffffff';
-  Chart.defaults.plugins.tooltip.bodyColor = '#c8cde0';
-  Chart.defaults.plugins.tooltip.padding = 10;
-  Chart.defaults.plugins.tooltip.cornerRadius = 6;
-  Chart.defaults.plugins.tooltip.titleFont = { family: "'IBM Plex Mono', monospace", size: 11 };
-  Chart.defaults.plugins.tooltip.bodyFont  = { family: "'IBM Plex Mono', monospace", size: 11 };
-  Chart.defaults.plugins.tooltip.displayColors = true;
-  Chart.defaults.plugins.tooltip.boxPadding = 4;
-
-  // Legend
-  Chart.defaults.plugins.legend.position = 'bottom';
-  Chart.defaults.plugins.legend.labels.usePointStyle = true;
-  Chart.defaults.plugins.legend.labels.pointStyleWidth = 8;
-  Chart.defaults.plugins.legend.labels.boxHeight = 8;
-  Chart.defaults.plugins.legend.labels.padding = 16;
-  Chart.defaults.plugins.legend.labels.font = { size: 11, family: "'Sora', sans-serif" };
+  Chart.defaults.font.size   = 12;
+  Chart.defaults.color       = '#5a607a';
+  Chart.defaults.plugins.tooltip.backgroundColor  = '#1a1d2e';
+  Chart.defaults.plugins.tooltip.titleColor       = '#ffffff';
+  Chart.defaults.plugins.tooltip.bodyColor        = '#c8cde0';
+  Chart.defaults.plugins.tooltip.padding          = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius     = 6;
+  Chart.defaults.plugins.tooltip.titleFont        = { family: "'IBM Plex Mono', monospace", size: 11 };
+  Chart.defaults.plugins.tooltip.bodyFont         = { family: "'IBM Plex Mono', monospace", size: 11 };
+  Chart.defaults.plugins.tooltip.displayColors    = true;
+  Chart.defaults.plugins.tooltip.boxPadding       = 4;
+  Chart.defaults.plugins.legend.position          = 'bottom';
+  Chart.defaults.plugins.legend.labels.usePointStyle    = true;
+  Chart.defaults.plugins.legend.labels.pointStyleWidth  = 8;
+  Chart.defaults.plugins.legend.labels.boxHeight        = 8;
+  Chart.defaults.plugins.legend.labels.padding          = 16;
+  Chart.defaults.plugins.legend.labels.font             = { size: 11, family: "'Sora', sans-serif" };
 }
 
-// Normalized axis grid options for light mode
-function gridOpts() {
-  return { color: '#e2e5ef', drawBorder: false };
-}
-
-function tickOpts() {
-  return { color: '#9299b0', font: { size: 11 } };
-}
+function gridOpts() { return { color: '#e2e5ef', drawBorder: false }; }
+function tickOpts() { return { color: '#9299b0', font: { size: 11 } }; }
 
 // ==========================================
-// 1. LOGIN AREA — CSV UPLOADER
+// 1. LOGIN — CSV UPLOADER
 // ==========================================
 
 function injectCSVUploader() {
   const form = document.getElementById('login-form');
   if (!form || document.getElementById('csv-dropzone')) return;
-
   const wrap = document.createElement('div');
   wrap.className = 'input-group';
   wrap.innerHTML = `
@@ -488,12 +269,12 @@ function injectCSVUploader() {
   `;
   form.insertBefore(wrap, form.firstChild);
 
-  const dz  = document.getElementById('csv-dropzone');
-  const fi  = document.getElementById('csv-upload');
-  const st  = document.getElementById('upload-status');
+  const dz = document.getElementById('csv-dropzone');
+  const fi = document.getElementById('csv-upload');
+  const st = document.getElementById('upload-status');
 
-  dz.addEventListener('click',     () => fi.click());
-  dz.addEventListener('dragover',  (e) => { e.preventDefault(); dz.style.background = 'rgba(67,97,238,.18)'; });
+  dz.addEventListener('click',    () => fi.click());
+  dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.style.background = 'rgba(67,97,238,.18)'; });
   dz.addEventListener('dragleave', ()  => { dz.style.background = ''; });
   dz.addEventListener('drop', (e)      => { e.preventDefault(); dz.style.background = ''; handleFiles(e.dataTransfer.files); });
   fi.addEventListener('change',   (e)  => handleFiles(e.target.files));
@@ -512,9 +293,7 @@ parseCSV('Planilha_Academica_Medicina.csv', 'Planilha Padrão', true);
 function parseCSV(fileOrUrl, _sourceName, isSilent = false) {
   Papa.parse(fileOrUrl, {
     download: typeof fileOrUrl === 'string',
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true,
+    header: true, dynamicTyping: true, skipEmptyLines: true,
     complete({ data }) {
       data.forEach(row => {
         const mat = String(row['Matrícula'] || '').trim();
@@ -533,11 +312,11 @@ function parseCSV(fileOrUrl, _sourceName, isSilent = false) {
 // 2. LOGIN FORM
 // ==========================================
 
-const formEl        = document.getElementById('login-form');
-const emailInput    = document.getElementById('email');
+const formEl         = document.getElementById('login-form');
+const emailInput     = document.getElementById('email');
 const matriculaInput = document.getElementById('matricula');
-const loginBtn      = document.getElementById('login-btn');
-const errorEl       = document.getElementById('login-error');
+const loginBtn       = document.getElementById('login-btn');
+const errorEl        = document.getElementById('login-error');
 
 function validateForm() {
   if (!loginBtn) return;
@@ -549,10 +328,9 @@ matriculaInput?.addEventListener('input', validateForm);
 
 formEl?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email    = emailInput.value.trim().toLowerCase();
+  const email     = emailInput.value.trim().toLowerCase();
   const matricula = matriculaInput.value.trim();
   loginBtn.textContent = 'Autenticando…';
-
   try {
     await new Promise(r => setTimeout(r, 500));
     const user = Array.from(STATE.rawDataMap.values()).find(
@@ -583,14 +361,13 @@ function categorizeDiscipline(name) {
 }
 
 function processData() {
-  const user      = STATE.currentUser;
-  const allUsers  = Array.from(STATE.rawDataMap.values());
-  const total     = allUsers.length;
-  const userMat   = String(user['Matrícula']);
+  const user     = STATE.currentUser;
+  const allUsers = Array.from(STATE.rawDataMap.values());
+  const total    = allUsers.length;
+  const userMat  = String(user['Matrícula']);
 
-  // Parse discipline keys
-  const periodsMap  = {};
-  const discMeta    = [];
+  const periodsMap = {};
+  const discMeta   = [];
   Object.keys(user).forEach(key => {
     const m = key.match(/\((\d+)º Período\)\s+(.+)/);
     if (m) {
@@ -603,26 +380,16 @@ function processData() {
   });
 
   const periods = Object.keys(periodsMap).map(Number).sort((a, b) => a - b);
-
-  // Per-discipline accumulators
   const discStats = {};
   discMeta.forEach(d => {
-    discStats[d.key] = {
-      name: d.name, period: d.period, category: d.category,
-      userGrade: user[d.key] || 0,
-      sum: 0, count: 0,
-    };
+    discStats[d.key] = { name: d.name, period: d.period, category: d.category, userGrade: user[d.key] || 0, sum: 0, count: 0 };
   });
 
-  // Category radar accumulators
-  const catKeys = ['Básicas', 'Clínica', 'Cirurgia', 'Saúde Pública', 'Humanidades'];
   const catStats = {};
-  catKeys.forEach(k => { catStats[k] = { u: 0, uc: 0, c: 0, cc: 0 }; });
+  CAT_LABELS.forEach(k => { catStats[k] = { u: 0, uc: 0, c: 0, cc: 0 }; });
 
-  // Period means per student (for P90)
   const allPeriodMeans = {};
   periods.forEach(p => { allPeriodMeans[p] = []; });
-
   const userPeriodMeans = {};
   const cohortCRs = new Float32Array(total);
   let userCR = 0;
@@ -641,74 +408,84 @@ function processData() {
           discStats[key].sum   += g;
           discStats[key].count += 1;
           const cat = discStats[key].category;
-          catStats[cat].c  += g;
-          catStats[cat].cc += 1;
-          if (isUser) {
-            catStats[cat].u  += g;
-            catStats[cat].uc += 1;
-          }
+          catStats[cat].c  += g; catStats[cat].cc += 1;
+          if (isUser) { catStats[cat].u += g; catStats[cat].uc += 1; }
         }
       }
       if (pCount > 0) {
-        const pm = pSum / pCount;
-        allPeriodMeans[p].push(pm);
-        if (isUser) userPeriodMeans[p] = pm;
+        allPeriodMeans[p].push(pSum / pCount);
+        if (isUser) userPeriodMeans[p] = pSum / pCount;
       }
-      totalSum   += pSum;
-      totalCount += pCount;
+      totalSum += pSum; totalCount += pCount;
     }
-
     const cr = totalCount > 0 ? totalSum / totalCount : 0;
     cohortCRs[i] = cr;
     if (isUser) userCR = cr;
   }
 
-  // Rank
   let userRank = 1;
   for (let i = 0; i < total; i++) if (cohortCRs[i] > userCR) userRank++;
   const userPct = Math.round(((total - userRank) / total) * 100);
 
-  // Per-period stats + P90
   const statsPerPeriod = periods.map(p => {
     const means = [...allPeriodMeans[p]];
     const n     = means.length;
     const mean  = means.reduce((a, b) => a + b, 0) / n;
     const variance = means.reduce((sq, v) => sq + (v - mean) ** 2, 0) / (n - 1 || 1);
     means.sort((a, b) => a - b);
-    const top10 = means[Math.floor(n * 0.9)] ?? mean;
     return {
-      period:        p,
-      studentMean:   userPeriodMeans[p] ?? 0,
-      cohortMean:    mean,
-      cohortStdDev:  Math.sqrt(Math.max(0, variance)),
-      top10Mean:     top10,
+      period: p, studentMean: userPeriodMeans[p] ?? 0,
+      cohortMean: mean, cohortStdDev: Math.sqrt(Math.max(0, variance)),
+      top10Mean: means[Math.floor(n * 0.9)] ?? mean,
     };
   });
 
   const disciplines = Object.values(discStats)
-    .map(d => ({
-      ...d,
-      cohortMean: d.count > 0 ? d.sum / d.count : 0,
-      diff:       d.userGrade - (d.count > 0 ? d.sum / d.count : 0),
-    }))
+    .map(d => ({ ...d, cohortMean: d.count > 0 ? d.sum / d.count : 0, diff: d.userGrade - (d.count > 0 ? d.sum / d.count : 0) }))
     .filter(d => d.userGrade > 0);
-
-  const lastMean = statsPerPeriod.at(-1)?.studentMean ?? 0;
 
   return {
     statsPerPeriod, userCR, userRank, totalStudents: total,
-    userPercentile: userPct, trendDiff: lastMean - userCR,
+    userPercentile: userPct, trendDiff: (statsPerPeriod.at(-1)?.studentMean ?? 0) - userCR,
     cohortCRs, catStats, disciplines, periods,
   };
 }
 
+// ─── FILTER ENGINE ────────────────────────────────
+
+function getFilteredView(fullData) {
+  const { periods: ap, categories: ac } = STATE.activeFilters;
+  const hasP = ap.size > 0;
+  const hasC = ac.size > 0;
+
+  const disciplines = fullData.disciplines.filter(d =>
+    (!hasP || ap.has(d.period)) && (!hasC || ac.has(d.category))
+  );
+
+  const periods = hasP ? fullData.periods.filter(p => ap.has(p)) : fullData.periods;
+  const statsPerPeriod = hasP ? fullData.statsPerPeriod.filter(s => ap.has(s.period)) : fullData.statsPerPeriod;
+
+  // Recalcula catStats para o radar refletir o filtro
+  const catStats = {};
+  CAT_LABELS.forEach(k => { catStats[k] = { u: 0, uc: 0, c: 0, cc: 0 }; });
+  disciplines.forEach(d => {
+    catStats[d.category].u  += d.userGrade;
+    catStats[d.category].uc += 1;
+    catStats[d.category].c  += d.cohortMean;
+    catStats[d.category].cc += 1;
+  });
+
+  return { ...fullData, disciplines, periods, statsPerPeriod, catStats };
+}
+
 // ==========================================
-// 4. DASHBOARD HTML SCAFFOLD
+// 4. DASHBOARD SCAFFOLD
 // ==========================================
 
 function buildDashboard() {
   applyChartDefaults();
-  const data      = processData();
+  STATE.fullData = processData();
+  const data      = STATE.fullData;
   const firstName = STATE.currentUser['Nome do Aluno'].split(' ')[0];
 
   document.body.innerHTML = `
@@ -720,14 +497,12 @@ function buildDashboard() {
           </div>
           <span class="sidebar-brand-name">MedDash</span>
         </div>
-
         <div class="sidebar-profile">
           <div class="sidebar-avatar">${firstName.charAt(0)}</div>
           <div class="sidebar-name">${STATE.currentUser['Nome do Aluno']}</div>
           <div class="sidebar-id">ID ${STATE.currentUser['Matrícula']}</div>
           <span class="badge-pct">Percentil ${data.userPercentile}</span>
         </div>
-
         <nav>
           <a href="#" class="nav-link active">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -742,7 +517,7 @@ function buildDashboard() {
           <p class="page-sub">Prontuário analítico longitudinal · ${STATE.currentUser['Nome do Aluno']}</p>
         </div>
 
-        <!-- KPIs -->
+        <!-- KPIs globais — não afetados pelos filtros -->
         <div class="kpi-grid fade-3">
           <div class="kpi-card primary">
             <div class="kpi-label">CR Global</div>
@@ -771,73 +546,85 @@ function buildDashboard() {
         <!-- Insights -->
         <div class="insight-strip fade-3" id="insights"></div>
 
-        <!-- Row 1: Evolution + Radar -->
-        <div class="chart-section cols-2-1 fade-4">
-          <div class="card">
-            <div class="card-title">Evolução por Período</div>
-            <div class="chart-wrap" style="height:280px;"><canvas id="chart-evo"></canvas></div>
+        <!-- FILTER BAR -->
+        <div class="filter-bar fade-4" id="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">Período</span>
+            <div class="filter-chips" id="chips-periods"></div>
           </div>
-          <div class="card">
-            <div class="card-title">Perfil de Competências</div>
-            <div class="chart-wrap" style="height:280px;"><canvas id="chart-radar"></canvas></div>
+          <div class="filter-sep"></div>
+          <div class="filter-group">
+            <span class="filter-label">Área</span>
+            <div class="filter-chips" id="chips-categories"></div>
           </div>
+          <span class="filter-summary" id="filter-summary"></span>
+          <button class="filter-reset" id="filter-reset" title="Limpar todos os filtros">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Limpar
+          </button>
         </div>
 
-        <!-- Row 2: Growth Tunnel + Distribution -->
-        <div class="chart-section cols-2 fade-4">
-          <div class="card">
-            <div class="card-title">Túnel de Crescimento (±1 DP)</div>
-            <div class="chart-wrap" style="height:240px;"><canvas id="chart-growth"></canvas></div>
+        <!-- Conteúdo reativo aos filtros -->
+        <div id="filtered-content">
+          <div class="chart-section cols-2-1 fade-4">
+            <div class="card">
+              <div class="card-title">Evolução por Período</div>
+              <div class="chart-wrap" style="height:280px;"><canvas id="chart-evo"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Perfil de Competências</div>
+              <div class="chart-wrap" style="height:280px;"><canvas id="chart-radar"></canvas></div>
+            </div>
           </div>
-          <div class="card">
-            <div class="card-title">Distribuição da Turma</div>
-            <div class="chart-wrap" style="height:240px;"><canvas id="chart-dist"></canvas></div>
+          <div class="chart-section cols-2 fade-4">
+            <div class="card">
+              <div class="card-title">Túnel de Crescimento (±1 DP)</div>
+              <div class="chart-wrap" style="height:240px;"><canvas id="chart-growth"></canvas></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Distribuição da Turma</div>
+              <div class="chart-wrap" style="height:240px;"><canvas id="chart-dist"></canvas></div>
+            </div>
           </div>
-        </div>
-
-        <!-- Row 3: Heatmap + Ranking -->
-        <div class="chart-section cols-2-1 fade-5">
-          <div class="card">
-            <div class="card-title">Heatmap por Disciplina</div>
-            <div id="heatmap-container" class="heatmap-wrap"></div>
+          <div class="chart-section cols-2-1 fade-5">
+            <div class="card">
+              <div class="card-title">Heatmap por Disciplina</div>
+              <div id="heatmap-container" class="heatmap-wrap"></div>
+            </div>
+            <div class="card">
+              <div class="card-title">Top 5 / Bottom 5 (Δ Turma)</div>
+              <div class="chart-wrap" style="height:360px;"><canvas id="chart-ranking"></canvas></div>
+            </div>
           </div>
-          <div class="card">
-            <div class="card-title">Top 5 / Bottom 5 (Δ Turma)</div>
-            <div class="chart-wrap" style="height:360px;"><canvas id="chart-ranking"></canvas></div>
+          <div class="card fade-5" style="overflow-x:auto;">
+            <div class="card-title" id="table-title">Prontuário Detalhado</div>
+            <table class="data-table" id="data-table">
+              <thead>
+                <tr>
+                  <th data-sort="name">Disciplina <i class="sort-icon">↕</i></th>
+                  <th data-sort="period">Período <i class="sort-icon">↕</i></th>
+                  <th data-sort="userGrade">Sua Nota <i class="sort-icon">↕</i></th>
+                  <th data-sort="cohortMean">Média Turma <i class="sort-icon">↕</i></th>
+                  <th data-sort="diff">Δ Diferença <i class="sort-icon">↕</i></th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
           </div>
-        </div>
-
-        <!-- Table -->
-        <div class="card fade-5" style="overflow-x:auto;">
-          <div class="card-title">Prontuário Detalhado</div>
-          <table class="data-table" id="data-table">
-            <thead>
-              <tr>
-                <th>Disciplina</th>
-                <th>Período</th>
-                <th>Sua Nota</th>
-                <th>Média Turma</th>
-                <th>Δ Diferença</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
         </div>
       </main>
     </div>
   `;
 
-  // Lucide icons (if available)
   if (window.lucide) lucide.createIcons();
-
-  // Animate CR counter
   animateValue(document.getElementById('kpi-cr'), 0, data.userCR, 900);
-
   renderInsights(data);
-  renderCharts(data);
-  renderHeatmap(data);
-  renderTable(data);
+  buildFilterBar(data);
+  renderAll(data);
+  bindTableSort();
 }
 
 // ==========================================
@@ -857,14 +644,12 @@ function animateValue(el, from, to, duration) {
 }
 
 // ==========================================
-// 6. INSIGHTS
+// 6. INSIGHTS (dados globais)
 // ==========================================
 
 function renderInsights(data) {
   const container = document.getElementById('insights');
-
-  const bestDisc = [...data.disciplines].sort((a, b) => b.diff - a.diff)[0];
-
+  const bestDisc  = [...data.disciplines].sort((a, b) => b.diff - a.diff)[0];
   const drops = [];
   for (let i = 1; i < data.statsPerPeriod.length; i++) {
     const diff = data.statsPerPeriod[i].studentMean - data.statsPerPeriod[i - 1].studentMean;
@@ -894,7 +679,141 @@ function renderInsights(data) {
 }
 
 // ==========================================
-// 7. CHARTS (light-mode, UX-normalized)
+// 7. FILTER BAR
+// ==========================================
+
+function buildFilterBar(data) {
+  const periodsCt    = document.getElementById('chips-periods');
+  const categoriesCt = document.getElementById('chips-categories');
+  const resetBtn     = document.getElementById('filter-reset');
+
+  // Chips de período
+  periodsCt.innerHTML = '';
+  data.periods.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className  = 'chip';
+    chip.dataset.value = p;
+    chip.textContent   = `${p}º P`;
+    chip.addEventListener('click', () => toggleFilter('periods', p, chip));
+    periodsCt.appendChild(chip);
+  });
+
+  // Chips de categoria (só as que o aluno possui)
+  categoriesCt.innerHTML = '';
+  CAT_LABELS.forEach(cat => {
+    if (!data.disciplines.some(d => d.category === cat)) return;
+    const chip = document.createElement('button');
+    chip.className     = 'chip';
+    chip.dataset.value = cat;
+    chip.textContent   = cat;
+    chip.addEventListener('click', () => toggleFilter('categories', cat, chip));
+    categoriesCt.appendChild(chip);
+  });
+
+  resetBtn.addEventListener('click', resetFilters);
+  updateFilterSummary();
+}
+
+function toggleFilter(type, value, chip) {
+  const set = STATE.activeFilters[type];
+  if (set.has(value)) { set.delete(value); chip.classList.remove('active'); }
+  else                { set.add(value);    chip.classList.add('active');    }
+  updateFilterSummary();
+  renderAll(getFilteredView(STATE.fullData));
+}
+
+function resetFilters() {
+  STATE.activeFilters.periods.clear();
+  STATE.activeFilters.categories.clear();
+  document.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+  updateFilterSummary();
+  renderAll(STATE.fullData);
+}
+
+function updateFilterSummary() {
+  const summary = document.getElementById('filter-summary');
+  if (!summary) return;
+  const { periods, categories } = STATE.activeFilters;
+  const hasFilter = periods.size > 0 || categories.size > 0;
+  if (!hasFilter) { summary.innerHTML = 'Exibindo <strong>todos</strong> os dados'; return; }
+  const parts = [];
+  if (periods.size)    parts.push(`${periods.size} período${periods.size > 1 ? 's' : ''}`);
+  if (categories.size) parts.push(`${categories.size} área${categories.size > 1 ? 's' : ''}`);
+  summary.innerHTML = `Filtrado por <strong>${parts.join(' · ')}</strong>`;
+}
+
+// ==========================================
+// 8. RENDER ALL
+// ==========================================
+
+function renderAll(data) {
+  // Destrói gráficos existentes
+  Object.keys(_charts).forEach(k => {
+    try { _charts[k].destroy(); } catch (_) {}
+    delete _charts[k];
+  });
+
+  if (!data.disciplines.length) {
+    document.getElementById('filtered-content').innerHTML = `
+      <div class="card empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <p>Nenhuma disciplina encontrada para os filtros selecionados.<br>
+           Ajuste os filtros ou <button onclick="resetFilters()" style="background:none;border:none;color:var(--primary);cursor:pointer;font-weight:600;font-family:var(--font);font-size:var(--t-sm);padding:0;">limpe a seleção</button>.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Reconstrói o HTML das seções se foi substituído por empty-state
+  if (!document.getElementById('chart-evo')) {
+    document.getElementById('filtered-content').innerHTML = `
+      <div class="chart-section cols-2-1 fade-4">
+        <div class="card"><div class="card-title">Evolução por Período</div><div class="chart-wrap" style="height:280px;"><canvas id="chart-evo"></canvas></div></div>
+        <div class="card"><div class="card-title">Perfil de Competências</div><div class="chart-wrap" style="height:280px;"><canvas id="chart-radar"></canvas></div></div>
+      </div>
+      <div class="chart-section cols-2 fade-4">
+        <div class="card"><div class="card-title">Túnel de Crescimento (±1 DP)</div><div class="chart-wrap" style="height:240px;"><canvas id="chart-growth"></canvas></div></div>
+        <div class="card"><div class="card-title">Distribuição da Turma</div><div class="chart-wrap" style="height:240px;"><canvas id="chart-dist"></canvas></div></div>
+      </div>
+      <div class="chart-section cols-2-1 fade-5">
+        <div class="card"><div class="card-title">Heatmap por Disciplina</div><div id="heatmap-container" class="heatmap-wrap"></div></div>
+        <div class="card"><div class="card-title">Top 5 / Bottom 5 (Δ Turma)</div><div class="chart-wrap" style="height:360px;"><canvas id="chart-ranking"></canvas></div></div>
+      </div>
+      <div class="card fade-5" style="overflow-x:auto;">
+        <div class="card-title" id="table-title">Prontuário Detalhado</div>
+        <table class="data-table" id="data-table">
+          <thead>
+            <tr>
+              <th data-sort="name">Disciplina <i class="sort-icon">↕</i></th>
+              <th data-sort="period">Período <i class="sort-icon">↕</i></th>
+              <th data-sort="userGrade">Sua Nota <i class="sort-icon">↕</i></th>
+              <th data-sort="cohortMean">Média Turma <i class="sort-icon">↕</i></th>
+              <th data-sort="diff">Δ Diferença <i class="sort-icon">↕</i></th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  renderCharts(data);
+  renderHeatmap(data);
+  renderTable(data);
+
+  // Atualiza título da tabela com contagem filtrada
+  const title = document.getElementById('table-title');
+  const hasFilter = STATE.activeFilters.periods.size > 0 || STATE.activeFilters.categories.size > 0;
+  if (title) title.textContent = hasFilter
+    ? `Prontuário Detalhado · ${data.disciplines.length} disciplina${data.disciplines.length !== 1 ? 's' : ''}`
+    : 'Prontuário Detalhado';
+}
+
+// ==========================================
+// 9. CHARTS
 // ==========================================
 
 function renderCharts(data) {
@@ -904,376 +823,173 @@ function renderCharts(data) {
   const cohort  = sp.map(s => +s.cohortMean.toFixed(2));
   const top10   = sp.map(s => +s.top10Mean.toFixed(2));
 
-  // ── Shared y-axis config (0-10, academic scale)
-  const yScale = {
-    min: 0,
-    max: 10,
-    ticks: { stepSize: 2, ...tickOpts() },
-    grid: gridOpts(),
-    border: { display: false },
-  };
+  const yScale = { min: 0, max: 10, ticks: { stepSize: 2, ...tickOpts() }, grid: gridOpts(), border: { display: false } };
+  const xScale = { ticks: tickOpts(), grid: { display: false }, border: { display: false } };
 
-  const xScale = {
-    ticks: tickOpts(),
-    grid: { display: false },
-    border: { display: false },
-  };
-
-  // ── 1. Evolution line chart
-  const evoCtx = document.getElementById('chart-evo').getContext('2d');
+  // 1. Evolution
+  const evoCtx  = document.getElementById('chart-evo').getContext('2d');
   const evoGrad = evoCtx.createLinearGradient(0, 0, 0, 280);
   evoGrad.addColorStop(0, 'rgba(67,97,238,.18)');
   evoGrad.addColorStop(1, 'rgba(67,97,238,.00)');
 
-  new Chart(evoCtx, {
+  _charts.evo = new Chart(evoCtx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        {
-          label: 'Sua Média',
-          data: student,
-          borderColor: '#4361ee',
-          backgroundColor: evoGrad,
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointBackgroundColor: '#4361ee',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          order: 1,
-        },
-        {
-          label: 'Média Turma',
-          data: cohort,
-          borderColor: '#9299b0',
-          borderDash: [5, 4],
-          tension: 0.4,
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-          order: 2,
-        },
-        {
-          label: 'Top 10%',
-          data: top10,
-          borderColor: '#2d9d78',
-          borderDash: [2, 4],
-          tension: 0.4,
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-          order: 3,
-        },
+        { label: 'Sua Média',    data: student, borderColor: '#4361ee', backgroundColor: evoGrad, fill: true, tension: 0.4, borderWidth: 2.5, pointBackgroundColor: '#4361ee', pointRadius: 4, pointHoverRadius: 6, order: 1 },
+        { label: 'Média Turma', data: cohort,  borderColor: '#9299b0', borderDash: [5,4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: false, order: 2 },
+        { label: 'Top 10%',     data: top10,   borderColor: '#2d9d78', borderDash: [2,4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: false, order: 3 },
       ],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom' } },
-      scales: { y: yScale, x: xScale },
-    },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } }, scales: { y: yScale, x: xScale } },
   });
 
-  // ── 2. Growth tunnel (band chart)
+  // 2. Growth tunnel
   const upper = sp.map(s => +(s.cohortMean + s.cohortStdDev).toFixed(2));
   const lower = sp.map(s => +(s.cohortMean - s.cohortStdDev).toFixed(2));
 
-  new Chart(document.getElementById('chart-growth').getContext('2d'), {
+  _charts.growth = new Chart(document.getElementById('chart-growth').getContext('2d'), {
     type: 'line',
     data: {
       labels,
       datasets: [
-        {
-          label: 'Sua Nota',
-          data: student,
-          borderColor: '#4361ee',
-          tension: 0.4,
-          borderWidth: 2.5,
-          pointBackgroundColor: '#4361ee',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          fill: false,
-          order: 1,
-          z: 10,
-        },
-        {
-          label: '+1 DP',
-          data: upper,
-          borderColor: 'transparent',
-          backgroundColor: 'rgba(45,157,120,.12)',
-          fill: '+1',
-          tension: 0.4,
-          pointRadius: 0,
-          order: 3,
-        },
-        {
-          label: 'Média',
-          data: cohort,
-          borderColor: '#9299b0',
-          borderDash: [4, 4],
-          borderWidth: 1.5,
-          tension: 0.4,
-          pointRadius: 0,
-          fill: false,
-          order: 2,
-        },
-        {
-          label: '-1 DP',
-          data: lower,
-          borderColor: 'transparent',
-          backgroundColor: 'rgba(45,157,120,.12)',
-          fill: '-1',
-          tension: 0.4,
-          pointRadius: 0,
-          order: 4,
-        },
+        { label: 'Sua Nota', data: student, borderColor: '#4361ee', tension: 0.4, borderWidth: 2.5, pointBackgroundColor: '#4361ee', pointRadius: 4, pointHoverRadius: 6, fill: false, order: 1 },
+        { label: '+1 DP', data: upper, borderColor: 'transparent', backgroundColor: 'rgba(45,157,120,.12)', fill: '+1', tension: 0.4, pointRadius: 0, order: 3 },
+        { label: 'Média',  data: cohort, borderColor: '#9299b0', borderDash: [4,4], borderWidth: 1.5, tension: 0.4, pointRadius: 0, fill: false, order: 2 },
+        { label: '-1 DP', data: lower, borderColor: 'transparent', backgroundColor: 'rgba(45,157,120,.12)', fill: '-1', tension: 0.4, pointRadius: 0, order: 4 },
       ],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          labels: {
-            filter: i => !['+ 1 DP', '-1 DP'].includes(i.text),
-          },
-        },
-      },
-      scales: { y: yScale, x: xScale },
-    },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { labels: { filter: i => !['+1 DP', '-1 DP'].includes(i.text) } } }, scales: { y: yScale, x: xScale } },
   });
 
-  // ── 3. Distribution histogram
+  // 3. Distribution (usa dados globais para contexto correto)
   const bands = [
-    { l: '< 5',  min: 0, max: 4.99 },
-    { l: '5–6',  min: 5, max: 5.99 },
-    { l: '6–7',  min: 6, max: 6.99 },
-    { l: '7–8',  min: 7, max: 7.99 },
-    { l: '8–9',  min: 8, max: 8.99 },
-    { l: '9–10', min: 9, max: 10   },
+    { l: '< 5', min:0, max:4.99 }, { l: '5–6', min:5, max:5.99 },
+    { l: '6–7', min:6, max:6.99 }, { l: '7–8', min:7, max:7.99 },
+    { l: '8–9', min:8, max:8.99 }, { l: '9–10', min:9, max:10 },
   ];
   let uBandIdx = -1;
   const hist = new Array(bands.length).fill(0);
-  data.cohortCRs.forEach(cr => {
-    for (let i = 0; i < bands.length; i++) {
-      if (cr >= bands[i].min && cr <= bands[i].max) { hist[i]++; break; }
-    }
+  STATE.fullData.cohortCRs.forEach(cr => {
+    for (let i = 0; i < bands.length; i++) { if (cr >= bands[i].min && cr <= bands[i].max) { hist[i]++; break; } }
   });
   for (let i = 0; i < bands.length; i++) {
-    if (data.userCR >= bands[i].min && data.userCR <= bands[i].max) { uBandIdx = i; break; }
+    if (STATE.fullData.userCR >= bands[i].min && STATE.fullData.userCR <= bands[i].max) { uBandIdx = i; break; }
   }
-
-  new Chart(document.getElementById('chart-dist').getContext('2d'), {
+  _charts.dist = new Chart(document.getElementById('chart-dist').getContext('2d'), {
     type: 'bar',
     data: {
       labels: bands.map(b => b.l),
       datasets: [
-        {
-          label: 'Alunos',
-          data: hist,
-          backgroundColor: hist.map((_, i) =>
-            i === uBandIdx ? '#4361ee' : 'rgba(67,97,238,.18)'
-          ),
-          borderColor: hist.map((_, i) =>
-            i === uBandIdx ? '#4361ee' : 'rgba(67,97,238,.4)'
-          ),
-          borderWidth: 1,
-          borderRadius: 5,
-          borderSkipped: false,
-          order: 2,
-        },
-        {
-          type: 'line',
-          label: 'Curva de densidade',
-          data: hist,
-          borderColor: '#0096c7',
-          borderWidth: 2,
-          tension: 0.45,
-          pointRadius: 0,
-          fill: false,
-          order: 1,
-        },
+        { label: 'Alunos', data: hist, backgroundColor: hist.map((_,i) => i===uBandIdx ? '#4361ee' : 'rgba(67,97,238,.18)'), borderColor: hist.map((_,i) => i===uBandIdx ? '#4361ee' : 'rgba(67,97,238,.4)'), borderWidth: 1, borderRadius: 5, borderSkipped: false, order: 2 },
+        { type: 'line', label: 'Curva de densidade', data: hist, borderColor: '#0096c7', borderWidth: 2, tension: 0.45, pointRadius: 0, fill: false, order: 1 },
       ],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { position: 'bottom' } },
-      scales: {
-        y: {
-          ticks: { precision: 0, ...tickOpts() },
-          grid: gridOpts(),
-          border: { display: false },
-          title: { display: true, text: 'Nº Alunos', color: '#9299b0', font: { size: 11 } },
-        },
-        x: {
-          ...xScale,
-          title: { display: true, text: 'Faixa de CR', color: '#9299b0', font: { size: 11 } },
-        },
-      },
-    },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { precision:0, ...tickOpts() }, grid: gridOpts(), border: { display:false }, title: { display:true, text:'Nº Alunos', color:'#9299b0', font:{size:11} } }, x: { ...xScale, title: { display:true, text:'Faixa de CR', color:'#9299b0', font:{size:11} } } } },
   });
 
-  // ── 4. Radar
-  const catLabels = ['Básicas', 'Clínica', 'Cirurgia', 'Saúde Pública', 'Humanidades'];
-  const rStudent  = catLabels.map(c => { const v = data.catStats[c]; return v.uc > 0 ? +(v.u / v.uc).toFixed(2) : 0; });
-  const rCohort   = catLabels.map(c => { const v = data.catStats[c]; return v.cc > 0 ? +(v.c / v.cc).toFixed(2) : 0; });
+  // 4. Radar
+  const rStudent = CAT_LABELS.map(c => { const v = data.catStats[c]; return v.uc > 0 ? +(v.u/v.uc).toFixed(2) : 0; });
+  const rCohort  = CAT_LABELS.map(c => { const v = data.catStats[c]; return v.cc > 0 ? +(v.c/v.cc).toFixed(2) : 0; });
 
-  new Chart(document.getElementById('chart-radar').getContext('2d'), {
+  _charts.radar = new Chart(document.getElementById('chart-radar').getContext('2d'), {
     type: 'radar',
     data: {
-      labels: catLabels,
+      labels: CAT_LABELS,
       datasets: [
-        {
-          label: 'Você',
-          data: rStudent,
-          backgroundColor: 'rgba(67,97,238,.15)',
-          borderColor: '#4361ee',
-          borderWidth: 2,
-          pointBackgroundColor: '#4361ee',
-          pointRadius: 3,
-        },
-        {
-          label: 'Turma',
-          data: rCohort,
-          backgroundColor: 'transparent',
-          borderColor: '#9299b0',
-          borderDash: [4, 3],
-          borderWidth: 1.5,
-          pointRadius: 0,
-        },
+        { label: 'Você',  data: rStudent, backgroundColor: 'rgba(67,97,238,.15)', borderColor: '#4361ee', borderWidth: 2, pointBackgroundColor: '#4361ee', pointRadius: 3 },
+        { label: 'Turma', data: rCohort,  backgroundColor: 'transparent', borderColor: '#9299b0', borderDash: [4,3], borderWidth: 1.5, pointRadius: 0 },
       ],
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        r: {
-          min: 0,
-          max: 10,
-          ticks: { stepSize: 2, backdropColor: 'transparent', ...tickOpts() },
-          angleLines: { color: '#e2e5ef' },
-          grid: { color: '#e2e5ef' },
-          pointLabels: { color: '#5a607a', font: { size: 11, family: "'Sora', sans-serif" } },
-        },
-      },
-      plugins: { legend: { position: 'bottom' } },
-    },
+    options: { responsive: true, maintainAspectRatio: false, scales: { r: { min:0, max:10, ticks: { stepSize:2, backdropColor:'transparent', ...tickOpts() }, angleLines: { color:'#e2e5ef' }, grid: { color:'#e2e5ef' }, pointLabels: { color:'#5a607a', font:{size:11,family:"'Sora', sans-serif"} } } }, plugins: { legend: { position:'bottom' } } },
   });
 
-  // ── 5. Top/Bottom 5 horizontal bar
+  // 5. Top/Bottom 5
   const sorted    = [...data.disciplines].sort((a, b) => b.diff - a.diff);
   const topBottom = [...sorted.slice(0, 5), ...sorted.slice(-5)];
   const tbLabels  = topBottom.map(d => d.name.length > 22 ? d.name.slice(0, 22) + '…' : d.name);
   const tbDiffs   = topBottom.map(d => +d.diff.toFixed(2));
 
-  new Chart(document.getElementById('chart-ranking').getContext('2d'), {
-    type: 'bar',
-    indexAxis: 'y',
-    data: {
-      labels: tbLabels,
-      datasets: [
-        {
-          label: 'Δ vs Turma',
-          data: tbDiffs,
-          backgroundColor: tbDiffs.map(v => v >= 0 ? 'rgba(45,157,120,.25)' : 'rgba(224,82,82,.25)'),
-          borderColor:     tbDiffs.map(v => v >= 0 ? '#2d9d78' : '#e05252'),
-          borderWidth: 1.5,
-          borderRadius: 4,
-          borderSkipped: false,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => ` ${ctx.parsed.x > 0 ? '+' : ''}${ctx.parsed.x.toFixed(2)} vs média`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: tickOpts(),
-          grid: gridOpts(),
-          border: { display: false },
-          title: { display: true, text: 'Δ Nota', color: '#9299b0', font: { size: 11 } },
-        },
-        y: {
-          ticks: { color: '#5a607a', font: { size: 10.5, family: "'IBM Plex Mono', monospace" } },
-          grid: { display: false },
-          border: { display: false },
-        },
-      },
-    },
+  _charts.ranking = new Chart(document.getElementById('chart-ranking').getContext('2d'), {
+    type: 'bar', indexAxis: 'y',
+    data: { labels: tbLabels, datasets: [{ label: 'Δ vs Turma', data: tbDiffs, backgroundColor: tbDiffs.map(v => v>=0 ? 'rgba(45,157,120,.25)' : 'rgba(224,82,82,.25)'), borderColor: tbDiffs.map(v => v>=0 ? '#2d9d78' : '#e05252'), borderWidth: 1.5, borderRadius: 4, borderSkipped: false }] },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode:'index', intersect:false }, plugins: { legend:{display:false}, tooltip:{callbacks:{label: ctx => ` ${ctx.parsed.x>0?'+':''}${ctx.parsed.x.toFixed(2)} vs média`}} }, scales: { x: { ticks:tickOpts(), grid:gridOpts(), border:{display:false}, title:{display:true,text:'Δ Nota',color:'#9299b0',font:{size:11}} }, y: { ticks:{color:'#5a607a',font:{size:10.5,family:"'IBM Plex Mono', monospace"}}, grid:{display:false}, border:{display:false} } } },
   });
 }
 
 // ==========================================
-// 8. HEATMAP
+// 10. HEATMAP
 // ==========================================
 
 function renderHeatmap(data) {
   const container = document.getElementById('heatmap-container');
-  const names     = [...new Set(data.disciplines.map(d => d.name))].sort();
-  const totalCols = data.periods.length;
+  if (!container) return;
+  const names = [...new Set(data.disciplines.map(d => d.name))].sort();
+  const cols  = data.periods.length;
+  if (!names.length) { container.innerHTML = ''; return; }
 
-  let html = `<div class="heatmap-grid" style="grid-template-columns:180px repeat(${totalCols},40px);">`;
-
-  // Header row
+  let html = `<div class="heatmap-grid" style="grid-template-columns:180px repeat(${cols},40px);">`;
   html += '<div></div>';
-  data.periods.forEach(p => {
-    html += `<div class="hm-header">${p}º</div>`;
-  });
+  data.periods.forEach(p => { html += `<div class="hm-header">${p}º</div>`; });
 
-  // Data rows
   names.forEach(name => {
     html += `<div class="hm-row-label" title="${name}">${name}</div>`;
     data.periods.forEach(p => {
       const disc = data.disciplines.find(d => d.name === name && d.period === p);
-      if (!disc) {
-        html += '<div class="hm-cell empty"></div>';
-        return;
-      }
-      const cls  = disc.userGrade >= 8.5 ? 'grade-hi' : disc.userGrade >= 6 ? 'grade-mid' : 'grade-low';
-      const tip  = `${name} · ${p}º P\nNota: ${disc.userGrade.toFixed(1)} | Turma: ${disc.cohortMean.toFixed(1)}`;
-      html += `<div class="hm-cell ${cls}" title="${tip}">${disc.userGrade.toFixed(1)}</div>`;
+      if (!disc) { html += '<div class="hm-cell empty"></div>'; return; }
+      const cls = disc.userGrade >= 8.5 ? 'grade-hi' : disc.userGrade >= 6 ? 'grade-mid' : 'grade-low';
+      html += `<div class="hm-cell ${cls}" title="${name} · ${p}º P&#10;Nota: ${disc.userGrade.toFixed(1)} | Turma: ${disc.cohortMean.toFixed(1)}">${disc.userGrade.toFixed(1)}</div>`;
     });
   });
-
   html += '</div>';
   container.innerHTML = html;
 }
 
 // ==========================================
-// 9. TABLE
+// 11. TABLE (com ordenação por coluna)
 // ==========================================
 
 function renderTable(data) {
   const tbody = document.querySelector('#data-table tbody');
-  tbody.innerHTML = data.disciplines
-    .sort((a, b) => b.period - a.period || b.userGrade - a.userGrade)
-    .map(d => {
-      const sign = d.diff > 0 ? '+' : '';
-      const ok   = d.diff >= 0;
-      return `
-        <tr>
-          <td>${d.name}</td>
-          <td class="mono">${d.period}º</td>
-          <td class="mono" style="font-weight:600;">${d.userGrade.toFixed(1)}</td>
-          <td class="mono" style="color:var(--text-3);">${d.cohortMean.toFixed(1)}</td>
-          <td class="mono" style="color:${ok ? 'var(--green)' : 'var(--red)'};">${sign}${d.diff.toFixed(2)}</td>
-          <td><span class="badge ${ok ? 'ok' : 'bad'}">${ok ? 'Adequado' : 'Atenção'}</span></td>
-        </tr>
-      `;
-    })
-    .join('');
+  if (!tbody) return;
+
+  const { key, dir } = STATE.tableSort;
+  const sorted = [...data.disciplines].sort((a, b) => {
+    const va = typeof a[key] === 'string' ? a[key].localeCompare(b[key], 'pt') : (a[key] - b[key]);
+    return dir === 'asc' ? va : -va;
+  });
+
+  // Atualiza indicadores de ordenação
+  document.querySelectorAll('#data-table th[data-sort]').forEach(th => {
+    th.classList.toggle('sorted', th.dataset.sort === key);
+    const icon = th.querySelector('.sort-icon');
+    if (icon) icon.textContent = th.dataset.sort === key ? (dir === 'asc' ? '↑' : '↓') : '↕';
+  });
+
+  tbody.innerHTML = sorted.map(d => {
+    const ok   = d.diff >= 0;
+    const sign = d.diff > 0 ? '+' : '';
+    return `
+      <tr>
+        <td>${d.name}</td>
+        <td class="mono">${d.period}º</td>
+        <td class="mono" style="font-weight:600;">${d.userGrade.toFixed(1)}</td>
+        <td class="mono" style="color:var(--text-3);">${d.cohortMean.toFixed(1)}</td>
+        <td class="mono" style="color:${ok ? 'var(--green)' : 'var(--red)'};">${sign}${d.diff.toFixed(2)}</td>
+        <td><span class="badge ${ok ? 'ok' : 'bad'}">${ok ? 'Adequado' : 'Atenção'}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function bindTableSort() {
+  document.addEventListener('click', e => {
+    const th = e.target.closest('#data-table th[data-sort]');
+    if (!th) return;
+    const key = th.dataset.sort;
+    STATE.tableSort.dir = STATE.tableSort.key === key && STATE.tableSort.dir === 'desc' ? 'asc' : 'desc';
+    STATE.tableSort.key = key;
+    renderTable(getFilteredView(STATE.fullData));
+  });
 }
