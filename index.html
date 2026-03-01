@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedDash - Acompanhamento Acadêmico</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <main id="login-view" class="view active">
+        <div class="login-container">
+            <h1>MedDash</h1>
+            <p>Acompanhamento Longitudinal de Desempenho</p>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="email">E-mail Institucional</label>
+                    <input type="email" id="email" required placeholder="ex: aluno@medicina.edu">
+                </div>
+                <div class="input-group">
+                    <label for="matricula">Senha (Matrícula)</label>
+                    <input type="password" id="matricula" required placeholder="Sua matrícula">
+                </div>
+                <button type="submit" id="login-btn">Acessar</button>
+                <div id="login-error" class="error-msg hidden">Credenciais inválidas ou erro ao carregar dados.</div>
+            </form>
+        </div>
+    </main>
+
+    <main id="dashboard-view" class="view hidden">
+        <header class="dash-header">
+            <div>
+                <h2>Olá, <span id="student-name">Aluno</span></h2>
+                <p>Matrícula: <span id="student-id">000</span></p>
+            </div>
+            <button id="logout-btn">Sair</button>
+        </header>
+
+        <div class="dashboard-grid">
+            <section class="kpi-cards">
+                <div class="card">
+                    <h3>Coeficiente de Rendimento (CR)</h3>
+                    <div class="kpi-value" id="kpi-cr">0.0</div>
+                </div>
+                <div class="card">
+                    <h3>Posição na Turma</h3>
+                    <div class="kpi-value" id="kpi-rank">0º</div>
+                    <p class="kpi-sub" id="kpi-percentile">Top 0%</p>
+                </div>
+                <div class="card">
+                    <h3>Tendência Global</h3>
+                    <div class="kpi-value" id="kpi-trend">-</div>
+                    <p class="kpi-sub">Último período vs Média Histórica</p>
+                </div>
+            </section>
+
+            <section class="charts-container">
+                <div class="chart-card">
+                    <h3>Evolução Longitudinal por Período</h3>
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Curva de Crescimento Acadêmico (Desvio Padrão)</h3>
+                    <p class="chart-desc">Sua nota em relação à normalidade da turma (+/- 1 DP).</p>
+                    <canvas id="growthChart"></canvas>
+                </div>
+                <div class="chart-card full-width">
+                    <h3>Distribuição da Turma (Anônima)</h3>
+                    <p class="chart-desc">Onde você se encontra no montante geral (CR global).</p>
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </section>
+        </div>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
