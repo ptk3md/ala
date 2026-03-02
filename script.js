@@ -1,6 +1,6 @@
 /* ==========================================================================
    MedDash Analytics — script.js  (reescrita completa)
-   17 melhorias implementadas:
+   17 melhorias implementadas: 
    1.  Sistema de alertas proativos de risco acadêmico
    2.  Simulador de CR futuro
    3.  Indicador de risco de reprovação por CR (limiar configurável)
