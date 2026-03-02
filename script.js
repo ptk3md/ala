@@ -1,6 +1,5 @@
 /**
- * MedDash Analytics — script.js (v2.0)
- * Implements all 17 improvement topics.
+ * MedDash Analytics — script.js (v2.1)
  */
 
 // ─────────────────────────────────────────────
@@ -105,6 +104,39 @@ const _charts = {};
 const $ = (t, p = {}, h = '') => Object.assign(document.createElement(t), p, { innerHTML: h });
 
 // ─────────────────────────────────────────────
+// CSS RESPONSIVO & FIXES INJETADOS NO JS
+// ─────────────────────────────────────────────
+function injectResponsiveCSS() {
+  if (document.getElementById('meddash-responsive-styles')) return;
+  const style = document.createElement('style');
+  style.id = 'meddash-responsive-styles';
+  style.innerHTML = `
+    @media (max-width: 992px) {
+      .layout { flex-direction: column; min-height: 100vh; }
+      .sidebar { width: 100%; height: auto; position: static; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 1rem; }
+      .sidebar-profile { display: none; }
+      #main-nav { display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.5rem; width: 100%; margin-top: 1rem; }
+      #main-nav .nav-link { padding: 0.5rem; flex: 1; text-align: center; justify-content: center; font-size: 0.8rem; white-space: nowrap; }
+      .main { margin-left: 0; padding: 1rem; width: 100%; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+      .cols-2, .cols-2-1 { grid-template-columns: 1fr; }
+      .insight-strip { flex-direction: column; gap: 0.5rem; }
+      .chart-wrap { height: 280px !important; }
+    }
+    @media (max-width: 600px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+      .chart-wrap { height: 240px !important; }
+      .heatmap-grid { overflow-x: auto; }
+      .data-table th, .data-table td { font-size: 0.75rem; padding: 0.4rem; }
+    }
+    .period-progress-badge { font-size: 0.65rem; background: var(--surface-2); color: var(--text-2); padding: 2px 6px; border-radius: 4px; margin-left: 6px; border: 1px solid var(--border); }
+    .period-progress-badge.partial { background: var(--warning-dim); color: var(--warning); border-color: transparent; }
+    .period-progress-badge.full { background: var(--success-dim); color: var(--success); border-color: transparent; }
+  `;
+  document.head.appendChild(style);
+}
+
+// ─────────────────────────────────────────────
 // CHART DEFAULTS
 // ─────────────────────────────────────────────
 function applyChartDefaults() {
@@ -202,7 +234,6 @@ function saveNotes(mat, notes) {
     Array.from(files).forEach(f => { if (f.name.endsWith('.csv')) parseCSV(f); });
   }
 
-  // Tenta carregar CSV padrão silenciosamente (item 15 — falha silenciosa)
   fetch('Planilha_Academica_Medicina.csv')
     .then(r => { if (!r.ok) throw new Error(); return r.blob(); })
     .then(blob => parseCSV(new File([blob], 'Planilha_Academica_Medicina.csv'), true))
@@ -280,224 +311,183 @@ formEl && formEl.addEventListener('submit', async function(e) {
   STATE.currentUser = user;
   STATE.notes = loadNotes(String(user['Matrícula']));
   document.body.classList.add('med-light');
+  injectResponsiveCSS();
   buildDashboard();
 });
 
 // ─────────────────────────────────────────────
-// DATA ENGINE (items 7, 9, 16)
+// DATA ENGINE (items 7, 9, 16) - REWORKED FOR FAIR COHORTS
 // ─────────────────────────────────────────────
 function processData() {
   const user     = STATE.currentUser;
   const allUsers = Array.from(STATE.rawDataMap.values());
-  const userMat  = String(user['Matrícula']);
 
-  // ── 1. Descobrir todos os períodos e disciplinas a partir do CSV completo ──
-  // Usamos TODOS os usuários para descobrir colunas, não só o usuário logado,
-  // pois alunos em períodos iniciais não terão colunas de períodos futuros.
+  // 1. Mapeamento de períodos e disciplinas globais
   const periodsMap = {}; // period → [colKey]
   const discStats  = {}; // colKey → stats
   allUsers.forEach(function(u) {
     Object.keys(u).forEach(function(k) {
-      if (discStats[k]) return; // já mapeado
+      if (discStats[k]) return; 
       const m = k.match(/\((\d+)º Período\)\s+(.+)/);
       if (!m) return;
       const p = +m[1], name = m[2].trim();
       if (!periodsMap[p]) periodsMap[p] = [];
       if (!periodsMap[p].includes(k)) periodsMap[p].push(k);
-      discStats[k] = { name: name, period: p, category: categorize(name),
-                       userGrade: 0, sum: 0, count: 0 };
+      discStats[k] = { name: name, period: p, category: categorize(name), userGrade: 0, sum: 0, count: 0 };
     });
   });
 
   // Preencher notas do usuário atual
+  const userTakenDiscs = [];
   Object.keys(discStats).forEach(function(k) {
     const g = user[k];
-    if (typeof g === 'number' && !isNaN(g)) discStats[k].userGrade = g;
+    if (typeof g === 'number' && !isNaN(g) && g > 0) {
+      discStats[k].userGrade = g;
+      userTakenDiscs.push(k);
+    }
   });
 
-  // Períodos que o usuário efetivamente cursou (tem pelo menos 1 nota)
-  const allPeriods = Object.keys(periodsMap).map(Number).sort(function(a, b) { return a - b; });
-  const userPeriods = allPeriods.filter(function(p) {
-    return periodsMap[p].some(function(k) {
-      const g = user[k];
-      return typeof g === 'number' && !isNaN(g) && g > 0;
-    });
-  });
-  // Período mais avançado que o usuário cursou
-  const userMaxPeriod = userPeriods.length > 0 ? Math.max.apply(null, userPeriods) : 0;
+  const allPeriods = Object.keys(periodsMap).map(Number).sort((a,b)=>a-b);
+  
+  // Informações de períodos (lidar com períodos parciais)
+  const userPeriodsInfo = allPeriods.map(p => {
+    const pCols = periodsMap[p] || [];
+    const takenCols = pCols.filter(k => user[k] > 0);
+    return { p: p, total: pCols.length, taken: takenCols.length, takenCols: takenCols };
+  }).filter(info => info.taken > 0);
 
-  // ── 2. Classificar cada aluno por "nível de progresso" ──────────────────────
-  // Um aluno "cursou até o período P" se tem notas em pelo menos metade das
-  // disciplinas desse período. Isso identifica alunos no mesmo estágio ou além.
-  function getMaxPeriodOfUser(u) {
-    let max = 0;
-    allPeriods.forEach(function(p) {
-      const cols = periodsMap[p] || [];
-      const filled = cols.filter(function(k) {
-        const g = u[k]; return typeof g === 'number' && !isNaN(g) && g > 0;
-      });
-      if (filled.length >= Math.ceil(cols.length / 2)) max = p;
-    });
-    return max;
+  const userPeriods = userPeriodsInfo.map(info => info.p);
+  const userMaxPeriodActual = userPeriods.length > 0 ? Math.max(...userPeriods) : 0;
+
+  // 2. Classificação de coorte: "comparável apenas aos alunos que cumpriram a mesma carga horária"
+  // Um par é alguém que cursou pelo menos UMA disciplina no `userMaxPeriodActual` ou além
+  function getStudentMaxPeriod(u) {
+    return Math.max(0, ...allPeriods.filter(p => (periodsMap[p]||[]).some(k => u[k] > 0)));
   }
 
-  // ── 3. Calcular CR e métricas acumuladas apenas com pares equivalentes ──────
-  // Para o ranking global do usuário: comparar apenas com alunos que chegaram
-  // ao mesmo período ou além (mesma carga horária mínima cumprida).
-  const userPeriodMeans  = {};
-  const catStats = {};
-  CAT_LABELS.forEach(function(c) { catStats[c] = { u: 0, uc: 0, c: 0, cc: 0 }; });
+  const peerUsers = allUsers.filter(u => getStudentMaxPeriod(u) >= userMaxPeriodActual);
 
-  // Acumular stats de disciplinas e médias por período para TODOS os alunos
-  // (necessário para benchmarks por período)
-  const allPeriodMeans = {}; // period → [{ mat, mean }]
-  allPeriods.forEach(function(p) { allPeriodMeans[p] = []; });
-
-  let userCR = 0;
-  const userMaxPeriodActual = getMaxPeriodOfUser(user);
-
-  // Alunos que chegaram ao mesmo período ou além → grupo de comparação global
-  const peerUsers = allUsers.filter(function(u) {
-    return getMaxPeriodOfUser(u) >= userMaxPeriodActual;
-  });
-
-  // Calcular CR de cada peer (só com disciplinas até userMaxPeriodActual)
-  // para comparação justa: mesma carga horária
-  const peerCRs = peerUsers.map(function(u) {
+  // Calcular CR apenas pelas matérias em intersecção com o usuário
+  const peerCRs = peerUsers.map(u => {
     let tSum = 0, tCount = 0;
-    for (var p = 1; p <= userMaxPeriodActual; p++) {
-      (periodsMap[p] || []).forEach(function(k) {
-        const g = u[k];
-        if (typeof g === 'number' && !isNaN(g) && g > 0) { tSum += g; tCount++; }
-      });
-    }
+    userTakenDiscs.forEach(k => {
+      if (u[k] > 0) { tSum += u[k]; tCount++; }
+    });
     return tCount > 0 ? tSum / tCount : 0;
   });
 
-  // CR do usuário (só até seu período máximo)
-  var userTSum = 0, userTCount = 0;
-  for (var p = 1; p <= userMaxPeriodActual; p++) {
-    (periodsMap[p] || []).forEach(function(k) {
-      const g = user[k];
-      if (typeof g === 'number' && !isNaN(g) && g > 0) { userTSum += g; userTCount++; }
-    });
-  }
-  userCR = userTCount > 0 ? userTSum / userTCount : 0;
+  let userTSum = 0, userTCount = 0;
+  userTakenDiscs.forEach(k => {
+    userTSum += user[k]; userTCount++;
+  });
+  let userCR = userTCount > 0 ? userTSum / userTCount : 0;
 
-  // Ranking global entre peers
   const peerTotal   = peerCRs.length;
-  const userRank    = peerCRs.filter(function(cr) { return cr > userCR; }).length + 1;
+  const userRank    = peerCRs.filter(cr => cr > userCR).length + 1;
   const userPercentile = peerTotal > 0 ? Math.round(((peerTotal - userRank) / peerTotal) * 100) : 0;
 
-  // ── 4. Stats por período — comparar com quem cursou aquele período ────────
-  const statsPerPeriod = userPeriods.map(function(p) {
-    // Alunos que chegaram ao período p ou além
-    const peersP = allUsers.filter(function(u) { return getMaxPeriodOfUser(u) >= p; });
-    const peerMeansP = peersP.map(function(u) {
+  // 3. Stats por período (lidando com períodos cursados parcialmente)
+  const statsPerPeriod = userPeriodsInfo.map(info => {
+    const p = info.p;
+    // Turma do período = Todos que chegaram ao período p
+    const peersP = allUsers.filter(u => getStudentMaxPeriod(u) >= p);
+    
+    // Média dos peers APENAS nas disciplinas que o aluno fez nesse período
+    const peerMeansP = peersP.map(u => {
       let s = 0, c = 0;
-      (periodsMap[p] || []).forEach(function(k) {
-        const g = u[k];
-        if (typeof g === 'number' && !isNaN(g) && g > 0) { s += g; c++; }
+      info.takenCols.forEach(k => {
+        if (u[k] > 0) { s += u[k]; c++; }
       });
       return c > 0 ? s / c : null;
-    }).filter(function(v) { return v !== null; });
+    }).filter(v => v !== null);
 
     const n    = peerMeansP.length;
-    const sorted = peerMeansP.slice().sort(function(a,b){return a-b;});
-    const mean = n > 0 ? sorted.reduce(function(a,b){return a+b;},0)/n : 0;
-    const variance = n > 1
-      ? sorted.reduce(function(sq,v){return sq+Math.pow(v-mean,2);},0)/(n-1) : 0;
+    const sorted = peerMeansP.slice().sort((a,b)=>a-b);
+    const mean = n > 0 ? sorted.reduce((a,b)=>a+b,0)/n : 0;
+    const variance = n > 1 ? sorted.reduce((sq,v)=>sq+Math.pow(v-mean,2),0)/(n-1) : 0;
     const stdDev = Math.sqrt(Math.max(0, variance));
     const top10  = sorted[Math.floor(n * 0.9)] || mean;
 
-    // Média do usuário nesse período
-    var uSum = 0, uCnt = 0;
-    (periodsMap[p] || []).forEach(function(k) {
-      const g = user[k];
-      if (typeof g === 'number' && !isNaN(g) && g > 0) { uSum += g; uCnt++; }
-    });
+    let uSum = 0, uCnt = 0;
+    info.takenCols.forEach(k => { uSum += user[k]; uCnt++; });
     const userM = uCnt > 0 ? uSum / uCnt : 0;
-    if (userM > 0) userPeriodMeans[p] = userM;
 
-    const pRank = peerMeansP.filter(function(m){return m > userM;}).length + 1;
+    const pRank = peerMeansP.filter(m => m > userM).length + 1;
     const pPct  = n > 0 ? Math.round(((n - pRank) / n) * 100) : 0;
-    const peerCount = peersP.length;
 
     return {
       period: p, studentMean: userM, cohortMean: mean,
       cohortStdDev: stdDev, top10Mean: top10,
       periodRank: pRank, periodPct: pPct,
-      periodPeerCount: peerCount, // quantos alunos nessa comparação
+      periodPeerCount: peersP.length,
+      total: info.total, taken: info.taken
     };
   });
 
-  // ── 5. catStats apenas para disciplinas cursadas pelo usuário ─────────────
-  // Para benchmarks de área: comparar com todos que cursaram aquela disciplina
-  Object.keys(discStats).forEach(function(k) {
+  // 4. CatStats (Áreas)
+  const catStats = {};
+  CAT_LABELS.forEach(c => catStats[c] = { u: 0, uc: 0, c: 0, cc: 0 });
+  Object.keys(discStats).forEach(k => {
     const d = discStats[k];
-    if (d.userGrade <= 0) return;
-    catStats[d.category].u  += d.userGrade;
-    catStats[d.category].uc += 1;
+    if (d.userGrade > 0) {
+      catStats[d.category].u  += d.userGrade;
+      catStats[d.category].uc += 1;
+    }
   });
-  // Acumular médias de turma por categoria a partir de todos que cursaram
-  allUsers.forEach(function(u) {
-    Object.keys(discStats).forEach(function(k) {
+
+  allUsers.forEach(u => {
+    Object.keys(discStats).forEach(k => {
       const g = u[k];
-      if (typeof g !== 'number' || isNaN(g) || g <= 0) return;
-      discStats[k].sum   += g;
-      discStats[k].count += 1;
-      catStats[discStats[k].category].c  += g;
-      catStats[discStats[k].category].cc += 1;
+      if (typeof g === 'number' && !isNaN(g) && g > 0) {
+        discStats[k].sum   += g;
+        discStats[k].count += 1;
+        // Compute area averages from everyone who took it
+        catStats[discStats[k].category].c  += g;
+        catStats[discStats[k].category].cc += 1;
+      }
     });
   });
 
-  // ── 6. Métricas complementares ────────────────────────────────────────────
-  const userAllGrades = Object.values(discStats).filter(function(d){ return d.userGrade > 0; }).map(function(d){ return d.userGrade; });
-  const gradeMean    = userAllGrades.length > 0 ? userAllGrades.reduce(function(a,b){return a+b;},0)/userAllGrades.length : 0;
-  const gradeVar     = userAllGrades.reduce(function(sq,v){return sq+Math.pow(v-gradeMean,2);},0)/Math.max(1,userAllGrades.length-1);
+  // 5. Complementares
+  const userAllGrades = Object.values(discStats).filter(d => d.userGrade > 0).map(d => d.userGrade);
+  const gradeMean    = userAllGrades.length > 0 ? userAllGrades.reduce((a,b)=>a+b,0)/userAllGrades.length : 0;
+  const gradeVar     = userAllGrades.reduce((sq,v)=>sq+Math.pow(v-gradeMean,2),0)/Math.max(1,userAllGrades.length-1);
   const gradeStdDev  = Math.sqrt(gradeVar);
 
-  // Tendência (regressão linear sobre médias por período)
-  const doneSP = statsPerPeriod.filter(function(s){ return s.studentMean > 0; });
+  const doneSP = statsPerPeriod.filter(s => s.studentMean > 0);
   let trendSlope = 0;
   if (doneSP.length >= 2) {
-    const xs    = doneSP.map(function(_,i){ return i; });
-    const ys    = doneSP.map(function(s){ return s.studentMean; });
-    const xMean = xs.reduce(function(a,b){return a+b;},0)/xs.length;
-    const yMean = ys.reduce(function(a,b){return a+b;},0)/ys.length;
-    const num   = xs.reduce(function(s,x,i){ return s+(x-xMean)*(ys[i]-yMean); },0);
-    const den   = xs.reduce(function(s,x){ return s+Math.pow(x-xMean,2); },0);
-    trendSlope  = den > 0 ? num/den : 0;
+    const xs = doneSP.map((_,i) => i), ys = doneSP.map(s => s.studentMean);
+    const xMean = xs.reduce((a,b)=>a+b,0)/xs.length, yMean = ys.reduce((a,b)=>a+b,0)/ys.length;
+    const num = xs.reduce((s,x,i) => s+(x-xMean)*(ys[i]-yMean),0);
+    const den = xs.reduce((s,x) => s+Math.pow(x-xMean,2),0);
+    trendSlope = den > 0 ? num/den : 0;
   }
   const trendDiff = doneSP.length > 0 ? (doneSP[doneSP.length-1].studentMean - userCR) : 0;
 
-  // Dependências — apenas para disciplinas já cursadas
   const depWarnings = [];
-  Object.keys(DISC_DEPS).forEach(function(disc) {
-    DISC_DEPS[disc].forEach(function(dep) {
-      const depEntry    = Object.values(discStats).find(function(d){ return d.name === dep; });
-      const targetEntry = Object.values(discStats).find(function(d){ return d.name === disc; });
+  Object.keys(DISC_DEPS).forEach(disc => {
+    DISC_DEPS[disc].forEach(dep => {
+      const depEntry    = Object.values(discStats).find(d => d.name === dep);
+      const targetEntry = Object.values(discStats).find(d => d.name === disc);
       if (depEntry && depEntry.userGrade > 0 && depEntry.userGrade < 6.5 && targetEntry) {
         depWarnings.push({ dependency: dep, target: disc, depGrade: depEntry.userGrade });
       }
     });
   });
 
-  const crMargin         = userCR - CR_MIN_REQUIRED;
-  const completedPeriods = userPeriods.length;
-  const totalExpected    = 12;
-
-  const disciplines = Object.values(discStats).filter(function(d){ return d.userGrade > 0; }).map(function(d) {
+  const disciplines = Object.values(discStats).filter(d => d.userGrade > 0).map(d => {
     const cohortMean = d.count > 0 ? d.sum / d.count : 0;
     return Object.assign({}, d, { cohortMean: cohortMean, diff: d.userGrade - cohortMean });
   });
 
   return {
     statsPerPeriod:       statsPerPeriod,
+    userPeriodsInfo:      userPeriodsInfo,
     userCR:               userCR,
     userRank:             userRank,
-    totalStudents:        peerTotal,       // peers com mesma carga, não total bruto
-    totalAllStudents:     allUsers.length, // total real do CSV
+    totalStudents:        peerTotal,
+    totalAllStudents:     allUsers.length,
     userMaxPeriod:        userMaxPeriodActual,
     userPercentile:       userPercentile,
     trendDiff:            trendDiff,
@@ -510,9 +500,9 @@ function processData() {
     gradeStdDev:          gradeStdDev,
     gradeMean:            gradeMean,
     depWarnings:          depWarnings,
-    crMargin:             crMargin,
-    completedPeriods:     completedPeriods,
-    totalExpectedPeriods: totalExpected,
+    crMargin:             userCR - CR_MIN_REQUIRED,
+    completedPeriods:     userPeriods.length,
+    totalExpectedPeriods: 12,
   };
 }
 
@@ -571,7 +561,13 @@ function buildDashboard() {
   applyChartDefaults();
   const data = STATE.fullData = processData();
   const u = STATE.currentUser;
-  const { userPercentile } = data;
+  const { userPercentile, userPeriodsInfo } = data;
+  
+  // Progress status string for header
+  const curPeriodInfo = userPeriodsInfo[userPeriodsInfo.length - 1];
+  const curPeriodBadge = curPeriodInfo.taken < curPeriodInfo.total 
+    ? `<span class="period-progress-badge partial">Cursando (${curPeriodInfo.taken}/${curPeriodInfo.total} disc.)</span>` 
+    : `<span class="period-progress-badge full">Concluído</span>`;
 
   document.body.innerHTML = `
 <div class="layout">
@@ -589,7 +585,7 @@ function buildDashboard() {
       <div class="sidebar-name">${u['Nome do Aluno']}</div>
       <div class="sidebar-id">ID ${u['Matrícula']}</div>
       <span class="badge-pct">Superou ${userPercentile}%</span>
-      <div style="font-size:9px;color:var(--text-3);margin-top:2px;">${data.userMaxPeriod}º período · ${data.totalStudents} peers</div>
+      <div style="font-size:9px;color:var(--text-3);margin-top:4px;">${data.userMaxPeriod}º período ${curPeriodBadge}</div>
     </div>
     <nav id="main-nav">
       <a href="#" class="nav-link active" data-section="overview">
@@ -602,11 +598,11 @@ function buildDashboard() {
       </a>
       <a href="#" class="nav-link" data-section="risk">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Alertas de Risco
+        Alertas
       </a>
       <a href="#" class="nav-link" data-section="simulator">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        Simulador CR
+        Simulador
       </a>
       <a href="#" class="nav-link" data-section="disciplines">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -617,13 +613,12 @@ function buildDashboard() {
         Anotações
       </a>
     </nav>
-    <div style="margin-top:auto;padding:.5rem;">
-      <button id="btn-export-pdf" style="width:100%;padding:.5rem .875rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text-2);font-size:var(--t-xs);font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;">
+    <div style="margin-top:auto;padding:.5rem;width:100%;">
+      <button id="btn-export-pdf" style="width:100%;padding:.5rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text-2);font-size:var(--t-xs);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar PDF
+        PDF
       </button>
-      <button id="btn-logout" style="width:100%;margin-top:.5rem;padding:.5rem .875rem;border:1px solid var(--border);border-radius:var(--r-md);background:transparent;color:var(--text-3);font-size:var(--t-xs);cursor:pointer;display:flex;align-items:center;gap:6px;">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <button id="btn-logout" style="width:100%;margin-top:.5rem;padding:.5rem;border:1px solid var(--border);border-radius:var(--r-md);background:transparent;color:var(--text-3);font-size:var(--t-xs);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;">
         Sair
       </button>
     </div>
@@ -668,12 +663,14 @@ function renderSection(section) {
 // SECTION: OVERVIEW
 // ─────────────────────────────────────────────
 function renderOverview(container, data) {
-  const { userCR, userRank, totalStudents, totalAllStudents, userMaxPeriod, userPercentile, trendDiff, crMargin, gradeStdDev, gradeMean, statsPerPeriod, disciplines, catStats, cohortCRs } = data;
+  const { userCR, userRank, totalStudents, totalAllStudents, userMaxPeriod, userPercentile, trendDiff, crMargin, gradeStdDev, gradeMean, statsPerPeriod, disciplines, catStats, cohortCRs, userPeriodsInfo } = data;
   const trendColor = trendDiff >= 0 ? 'var(--success)' : 'var(--danger)';
   const trendSign  = trendDiff > 0 ? '+' : '';
   const crMarginColor = crMargin < 0.5 ? 'var(--danger)' : crMargin < 1.5 ? 'var(--warning)' : 'var(--success)';
   const volatilityLabel = gradeStdDev < 1 ? 'Estável' : gradeStdDev < 1.8 ? 'Moderada' : 'Alta';
   const volatilityColor = gradeStdDev < 1 ? 'var(--success)' : gradeStdDev < 1.8 ? 'var(--warning)' : 'var(--danger)';
+  
+  const curPeriodInfo = userPeriodsInfo[userPeriodsInfo.length - 1];
 
   container.innerHTML = `
 <div class="page-header fade-2">
@@ -681,21 +678,21 @@ function renderOverview(container, data) {
   <p class="page-sub">Prontuário analítico longitudinal · ${STATE.currentUser['Nome do Aluno']}</p>
 </div>
 <div class="kpi-grid fade-3">
-  <div class="kpi-card primary"><div class="kpi-label">CR Global</div><div class="kpi-value" id="kpi-cr">0.00</div><div class="kpi-sub">Coeficiente de rendimento acumulado</div></div>
-  <div class="kpi-card teal"><div class="kpi-label">Posição Turma</div><div class="kpi-value">${userRank}º</div><div class="kpi-sub">entre ${totalStudents} alunos do ${data.userMaxPeriod}º+ período</div></div>
+  <div class="kpi-card primary"><div class="kpi-label">CR Global</div><div class="kpi-value" id="kpi-cr">0.00</div><div class="kpi-sub">Calculado na intersecção com a turma</div></div>
+  <div class="kpi-card teal"><div class="kpi-label">Posição Turma</div><div class="kpi-value">${userRank}º</div><div class="kpi-sub">entre ${totalStudents} alunos c/ msm carga horária</div></div>
   <div class="kpi-card ${trendDiff >= 0 ? 'green' : 'amber'}"><div class="kpi-label">Tendência Recente</div><div class="kpi-value" style="color:${trendColor};">${trendSign}${trendDiff.toFixed(2)}</div><div class="kpi-sub">Último período vs histórico</div></div>
-  <div class="kpi-card green"><div class="kpi-label">Percentil</div><div class="kpi-value" style="color:var(--success);">${userPercentile}%</div><div class="kpi-sub">Melhor que ${userPercentile}% da turma</div></div>
+  <div class="kpi-card green"><div class="kpi-label">Percentil</div><div class="kpi-value" style="color:var(--success);">${userPercentile}%</div><div class="kpi-sub">Melhor que ${userPercentile}% da coorte comparável</div></div>
   <div class="kpi-card ${crMargin < 0.5 ? 'danger' : crMargin < 1.5 ? 'amber' : 'green'}"><div class="kpi-label">Margem CR Mínimo</div><div class="kpi-value" style="color:${crMarginColor};">${crMargin >= 0 ? '+' : ''}${crMargin.toFixed(2)}</div><div class="kpi-sub">vs mínimo exigido (${CR_MIN_REQUIRED.toFixed(1)})</div></div>
   <div class="kpi-card ${gradeStdDev < 1 ? 'green' : gradeStdDev < 1.8 ? 'amber' : 'danger'}"><div class="kpi-label">Volatilidade</div><div class="kpi-value" style="color:${volatilityColor};font-size:1.5rem;">${volatilityLabel}</div><div class="kpi-sub">DP: ${gradeStdDev.toFixed(2)} · Média: ${gradeMean.toFixed(2)}</div></div>
 </div>
 <div id="insights-strip" class="insight-strip fade-3"></div>
 <div class="chart-section cols-2-1 fade-4">
-  <div class="card"><div class="card-title">Evolução por Período</div><div class="chart-wrap" style="height:300px;"><canvas id="chart-evo"></canvas></div></div>
+  <div class="card"><div class="card-title">Evolução por Período (vs Intersecção de Disciplinas)</div><div class="chart-wrap" style="height:300px;"><canvas id="chart-evo"></canvas></div></div>
   <div class="card"><div class="card-title">Perfil de Competências por Área</div><div class="chart-wrap" style="height:300px;"><canvas id="chart-radar"></canvas></div></div>
 </div>
 <div class="chart-section cols-2 fade-4">
   <div class="card"><div class="card-title">Túnel de Crescimento (±1 DP da turma)</div><div class="chart-wrap" style="height:260px;"><canvas id="chart-growth"></canvas></div></div>
-  <div class="card"><div class="card-title">Distribuição da Turma por CR Global</div><div class="chart-wrap" style="height:260px;"><canvas id="chart-dist"></canvas></div></div>
+  <div class="card"><div class="card-title">Distribuição da Turma (CR Normalizado)</div><div class="chart-wrap" style="height:260px;"><canvas id="chart-dist"></canvas></div></div>
 </div>
 <div class="chart-section cols-2-1 fade-5">
   <div class="card"><div class="card-title">Heatmap de Notas por Disciplina</div><div id="heatmap-container" class="heatmap-wrap"></div></div>
@@ -708,10 +705,15 @@ function renderOverview(container, data) {
 }
 
 function renderInsights(data) {
-  const { disciplines, statsPerPeriod, userPercentile, trendSlope, depWarnings, crMargin } = data;
+  const { disciplines, statsPerPeriod, userPercentile, trendSlope, depWarnings, crMargin, userPeriodsInfo } = data;
   const strip = document.getElementById('insights-strip');
   if (!strip) return;
   const insights = [];
+
+  const curInfo = userPeriodsInfo[userPeriodsInfo.length - 1];
+  if (curInfo.taken < curInfo.total) {
+    insights.push({ cls: 'warning', icon: '⏳', title: 'Período Incompleto', body: 'Você cursou <strong>' + curInfo.taken + ' de ' + curInfo.total + '</strong> disciplinas no ' + curInfo.p + 'º P. As comparações são feitas com justiça sobre as disciplinas que você cursou.' });
+  }
 
   const best = disciplines.slice().sort(function(a, b) { return b.diff - a.diff; })[0];
   if (best) insights.push({ cls: 'green', icon: '🏆', title: 'Destaque', body: 'Alta performance em <strong>' + best.name + '</strong> (+' + best.diff.toFixed(2) + ' vs turma).' });
@@ -725,8 +727,6 @@ function renderInsights(data) {
 
   if (trendSlope < -0.2)
     insights.push({ cls: 'warning', icon: '📉', title: 'Tendência de Queda', body: 'Declínio gradual nos últimos 3 períodos (' + trendSlope.toFixed(2) + '/período). Aja preventivamente.' });
-  else if (trendSlope > 0.2)
-    insights.push({ cls: 'teal', icon: '📈', title: 'Em Ascensão', body: 'Melhora gradual detectada (+' + trendSlope.toFixed(2) + '/período). Continue assim!' });
 
   if (crMargin < 0.5)
     insights.push({ cls: 'red', icon: '🚨', title: 'Risco de CR Mínimo', body: 'Seu CR está ' + (crMargin < 0 ? 'abaixo — ' : '') + '<strong>' + Math.abs(crMargin).toFixed(2) + ' pts</strong> do mínimo exigido.' });
@@ -734,7 +734,7 @@ function renderInsights(data) {
   if (depWarnings.length > 0)
     insights.push({ cls: 'warning', icon: '🔗', title: 'Dependências em Risco', body: 'Baixo desempenho em <strong>' + depWarnings[0].dependency + '</strong> (' + depWarnings[0].depGrade.toFixed(1) + ') pode afetar ' + depWarnings[0].target + '.' });
 
-  insights.push({ cls: 'teal', icon: '📊', title: 'Posição na Turma', body: 'Você é melhor que <strong>' + userPercentile + '%</strong> dos alunos do ' + data.userMaxPeriod + 'º período ou acima (posição ' + data.userRank + 'º de ' + data.totalStudents + ' peers).' });
+  insights.push({ cls: 'teal', icon: '📊', title: 'Posição (Ajustada)', body: 'Comparado estritamente à mesma carga horária, você superou <strong>' + userPercentile + '%</strong> de ' + data.totalStudents + ' peers.' });
 
   strip.innerHTML = insights.slice(0, 6).map(function(ins) {
     return '<div class="insight ' + ins.cls + '"><div class="insight-head">' + ins.icon + ' ' + ins.title + '</div><div class="insight-body">' + ins.body + '</div></div>';
@@ -761,7 +761,7 @@ function renderOverviewCharts(data) {
       labels: labels,
       datasets: [
         { label: 'Sua Média',    data: stu, borderColor: '#2563eb', backgroundColor: grad, fill: true, tension: 0.4, borderWidth: 2.5, pointBackgroundColor: '#2563eb', pointRadius: 4, pointHoverRadius: 6, order: 1 },
-        { label: 'Média Turma', data: coh, borderColor: '#9299b0', borderDash: [5,4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: false, order: 2 },
+        { label: 'Turma (Comparável)', data: coh, borderColor: '#9299b0', borderDash: [5,4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: false, order: 2 },
         { label: 'Top 10%',     data: t10, borderColor: '#16a34a', borderDash: [2,4], tension: 0.4, borderWidth: 1.5, pointRadius: 0, fill: false, order: 3 },
       ],
     }, { scales: { y: yS, x: xS } });
@@ -805,7 +805,7 @@ function renderOverviewCharts(data) {
     labels: CAT_LABELS,
     datasets: [
       { label: 'Você',   data: CAT_LABELS.map(function(c) { return catStats[c].uc ? +(catStats[c].u / catStats[c].uc).toFixed(2) : 0; }), backgroundColor: 'rgba(37,99,235,.15)', borderColor: '#2563eb', borderWidth: 2, pointBackgroundColor: '#2563eb', pointRadius: 3 },
-      { label: 'Turma',  data: CAT_LABELS.map(function(c) { return catStats[c].cc ? +(catStats[c].c / catStats[c].cc).toFixed(2) : 0; }), backgroundColor: 'transparent', borderColor: '#9299b0', borderDash: [4,3], borderWidth: 1.5, pointRadius: 0 },
+      { label: 'Turma Global',  data: CAT_LABELS.map(function(c) { return catStats[c].cc ? +(catStats[c].c / catStats[c].cc).toFixed(2) : 0; }), backgroundColor: 'transparent', borderColor: '#9299b0', borderDash: [4,3], borderWidth: 1.5, pointRadius: 0 },
     ],
   }, { scales: { r: { min: 0, max: 10, ticks: { stepSize: 2, backdropColor: 'transparent', color: '#9299b0', font: { size: 11 } }, angleLines: { color: '#e2e5ef' }, grid: { color: '#e2e5ef' }, pointLabels: { color: '#5a607a', font: { size: 11, family: "'Sora', sans-serif" } } } } });
 
@@ -828,7 +828,7 @@ function renderHeatmap(containerId, disciplines, periods) {
   if (!container) return;
   const names = Array.from(new Set(disciplines.map(function(d) { return d.name; }))).sort();
   if (!names.length) return;
-  container.innerHTML = '<div class="heatmap-grid" style="grid-template-columns:180px repeat(' + periods.length + ',40px);">'
+  container.innerHTML = '<div class="heatmap-grid" style="display:grid;grid-template-columns:minmax(120px,180px) repeat(' + periods.length + ',minmax(30px,40px));gap:2px;">'
     + '<div></div>' + periods.map(function(p) { return '<div class="hm-header">' + p + 'º</div>'; }).join('')
     + names.map(function(n) {
         return '<div class="hm-row-label" title="' + n + '">' + n + '</div>'
@@ -846,7 +846,7 @@ function renderHeatmap(containerId, disciplines, periods) {
 // SECTION: LINHA DO TEMPO (items 5, 6, 7, 10)
 // ─────────────────────────────────────────────
 function renderTimeline(container, data) {
-  const { statsPerPeriod, periods, totalExpectedPeriods } = data;
+  const { statsPerPeriod, periods, totalExpectedPeriods, userPeriodsInfo } = data;
   const completedSet = new Set(statsPerPeriod.filter(function(s) { return s.studentMean > 0; }).map(function(s) { return s.period; }));
   const maxDone = completedSet.size > 0 ? Math.max.apply(null, Array.from(completedSet)) : 0;
 
@@ -888,10 +888,10 @@ function renderTimeline(container, data) {
       const bg      = done ? color : current ? color + '22' : 'var(--surface-2)';
       const border  = done || current ? color : 'var(--border)';
       const textCol = done ? '#fff' : current ? color : 'var(--text-3)';
-      return '<div style="flex:1;min-width:70px;max-width:100px;padding:.75rem .5rem;border-radius:var(--r-lg);border:2px solid ' + border + ';background:' + bg + ';text-align:center;" title="' + p + 'º Período">'
+      return '<div style="flex:1;min-width:80px;max-width:110px;padding:.75rem .5rem;border-radius:var(--r-lg);border:2px solid ' + border + ';background:' + bg + ';text-align:center;" title="' + p + 'º Período">'
         + '<div style="font-size:var(--t-xs);font-weight:700;color:' + textCol + ';">' + p + 'º</div>'
         + '<div style="font-family:var(--mono);font-size:var(--t-sm);font-weight:600;color:' + textCol + ';">' + (done ? sp.studentMean.toFixed(1) : current ? '…' : '–') + '</div>'
-        + (done ? '<div style="font-size:9px;color:rgba(255,255,255,.8);">#' + sp.periodRank + ' / ' + sp.periodPeerCount + '</div>' : '')
+        + (done ? '<div style="font-size:9px;color:rgba(255,255,255,.8);margin-top:2px;">' + sp.taken + '/' + sp.total + ' disc.</div>' : '')
         + '</div>';
     }).join('')}
   </div>
@@ -907,7 +907,7 @@ function renderTimeline(container, data) {
 
 <div class="chart-section cols-2 fade-4">
   <div class="card">
-    <div class="card-title">Evolução do Percentil por Período <span style="font-size:var(--t-xs);font-weight:400;color:var(--text-3);">(vs alunos que cursaram cada período)</span></div>
+    <div class="card-title">Evolução do Percentil por Período</div>
     <div class="chart-wrap" style="height:260px;"><canvas id="chart-rank-history"></canvas></div>
   </div>
   <div class="card">
@@ -929,7 +929,7 @@ function renderTimeline(container, data) {
       y: { min: 0, max: 100, ticks: Object.assign({}, tickOpts(), { callback: function(v) { return v + '%'; } }), grid: gridOpts(), border: { display: false } },
       x: { ticks: tickOpts(), grid: { display: false }, border: { display: false } },
     },
-    plugins: { tooltip: { callbacks: { label: function(c) { const sp = doneSP[c.dataIndex]; return ' Superou ' + c.parsed.y + '% dos ' + (sp ? sp.periodPeerCount : '?') + ' alunos deste período'; } } } },
+    plugins: { tooltip: { callbacks: { label: function(c) { const sp = doneSP[c.dataIndex]; return ' Superou ' + c.parsed.y + '% dos ' + (sp ? sp.periodPeerCount : '?') + ' alunos (mesma carga)'; } } } },
   });
 
   makeChart('chart-period-detail', 'bar', {
@@ -954,7 +954,6 @@ function renderTimeline(container, data) {
     },
   });
 
-  // Evolução por área ao longo do tempo (item 10)
   const areaByPeriod = {};
   data.disciplines.forEach(function(d) {
     if (!areaByPeriod[d.category]) areaByPeriod[d.category] = {};
@@ -988,9 +987,8 @@ function renderTimeline(container, data) {
 // SECTION: ALERTAS DE RISCO (items 1, 3, 4, 8, 9)
 // ─────────────────────────────────────────────
 function renderRisk(container, data) {
-  const { statsPerPeriod, disciplines, crMargin, trendSlope, depWarnings, gradeStdDev, userCR, userRank, totalStudents, userMaxPeriod, userPercentile } = data;
+  const { statsPerPeriod, disciplines, crMargin, trendSlope, depWarnings, gradeStdDev, userCR, userRank, totalStudents, userMaxPeriod } = data;
 
-  // Quedas consecutivas (item 1)
   const consecutiveDrops = [];
   for (let i = 2; i < statsPerPeriod.length; i++) {
     if (statsPerPeriod[i].studentMean < statsPerPeriod[i-1].studentMean &&
@@ -1014,24 +1012,22 @@ function renderRisk(container, data) {
 
   let alertsHTML = '';
   if (crMargin < 0)
-    alertsHTML += alertCard('danger', '🚨', 'CR Abaixo do Mínimo Exigido', 'Seu CR (' + userCR.toFixed(2) + ') está <strong>' + Math.abs(crMargin).toFixed(2) + ' pts abaixo</strong> do mínimo de ' + CR_MIN_REQUIRED.toFixed(1) + '. Busque orientação acadêmica imediatamente.');
+    alertsHTML += alertCard('danger', '🚨', 'CR Abaixo do Mínimo Exigido', 'Seu CR (' + userCR.toFixed(2) + ') está <strong>' + Math.abs(crMargin).toFixed(2) + ' pts abaixo</strong> do mínimo de ' + CR_MIN_REQUIRED.toFixed(1) + '.');
   else if (crMargin < 1.5)
-    alertsHTML += alertCard('warn', '⚠', 'CR Próximo do Limite', 'Você tem apenas <strong>' + crMargin.toFixed(2) + ' pts de margem</strong> acima do mínimo. Qualquer queda pode representar risco.');
+    alertsHTML += alertCard('warn', '⚠', 'CR Próximo do Limite', 'Você tem apenas <strong>' + crMargin.toFixed(2) + ' pts de margem</strong> acima do mínimo.');
 
   if (trendSlope < -0.3)
-    alertsHTML += alertCard('danger', '📉', 'Declínio Gradual Detectado', 'Suas notas caem em média <strong>' + Math.abs(trendSlope).toFixed(2) + ' pts/período</strong> nos últimos 3 períodos. Identifique a causa antes que piore.');
-  else if (trendSlope < -0.1)
-    alertsHTML += alertCard('warn', '📊', 'Tendência de Queda Leve', 'Pequena inclinação negativa (' + trendSlope.toFixed(2) + '/período). Monitore com atenção.');
+    alertsHTML += alertCard('danger', '📉', 'Declínio Gradual Detectado', 'Suas notas caem em média <strong>' + Math.abs(trendSlope).toFixed(2) + ' pts/período</strong> nos últimos 3 períodos.');
 
   consecutiveDrops.forEach(function(drop) {
-    alertsHTML += alertCard('warn', '⬇', 'Quedas Consecutivas (' + drop.from + 'º→' + drop.to + 'º P)', 'Três períodos seguidos de queda. Identifique se há fatores externos interferindo no seu desempenho.');
+    alertsHTML += alertCard('warn', '⬇', 'Quedas Consecutivas (' + drop.from + 'º→' + drop.to + 'º P)', 'Três períodos seguidos de queda. Verifique o padrão de estudo.');
   });
 
   if (gradeStdDev >= 1.8)
-    alertsHTML += alertCard('warn', '📈', 'Alta Volatilidade de Notas', 'Desvio padrão de <strong>' + gradeStdDev.toFixed(2) + '</strong>: desempenho muito instável entre disciplinas. Pode indicar dificuldades em áreas específicas.');
+    alertsHTML += alertCard('warn', '📈', 'Alta Volatilidade de Notas', 'Desvio padrão de <strong>' + gradeStdDev.toFixed(2) + '</strong>: desempenho instável entre disciplinas.');
 
   riskDiscs.slice(0, 5).forEach(function(d) {
-    alertsHTML += alertCard('danger', '📚', 'Nota Crítica — ' + d.name, 'Nota de <strong>' + d.userGrade.toFixed(1) + '</strong> no ' + d.period + 'º período. Abaixo do limiar de aprovação. Área: ' + d.category + '.');
+    alertsHTML += alertCard('danger', '📚', 'Nota Crítica — ' + d.name, 'Nota de <strong>' + d.userGrade.toFixed(1) + '</strong> no ' + d.period + 'º período. (Área: ' + d.category + ').');
   });
 
   depWarnings.forEach(function(dw) {
@@ -1039,11 +1035,11 @@ function renderRisk(container, data) {
   });
 
   belowMedia.slice(0, 3).forEach(function(d) {
-    alertsHTML += alertCard('info', '📉', 'Abaixo da Turma — ' + d.name, 'Sua nota (' + d.userGrade.toFixed(1) + ') está <strong>' + Math.abs(d.diff).toFixed(2) + ' pts abaixo</strong> da média da turma (' + d.cohortMean.toFixed(1) + ').');
+    alertsHTML += alertCard('info', '📉', 'Abaixo da Turma — ' + d.name, 'Sua nota (' + d.userGrade.toFixed(1) + ') está <strong>' + Math.abs(d.diff).toFixed(2) + ' pts abaixo</strong> da média comparável.');
   });
 
   if (!alertsHTML)
-    alertsHTML = alertCard('ok', '✅', 'Nenhum Risco Crítico Detectado', 'Seu desempenho está dentro dos parâmetros seguros. Continue monitorando periodicamente.');
+    alertsHTML = alertCard('ok', '✅', 'Nenhum Risco Crítico Detectado', 'Seu desempenho está dentro dos parâmetros seguros.');
 
   container.innerHTML = `
 <div class="page-header fade-2">
@@ -1062,22 +1058,13 @@ function renderRisk(container, data) {
         <div style="font-family:var(--mono);font-size:3rem;font-weight:500;color:${crMargin < 0 ? 'var(--danger)' : crMargin < 1.5 ? 'var(--warning)' : 'var(--success)'};">${userCR.toFixed(2)}</div>
         <div style="color:var(--text-3);font-size:var(--t-sm);margin:.25rem 0;">Seu CR Global</div>
         <div style="color:var(--text-3);font-size:var(--t-xs);">Mínimo exigido: ${CR_MIN_REQUIRED.toFixed(1)}</div>
-        <div style="color:var(--text-3);font-size:var(--t-xs);margin-top:.25rem;">Posição: ${userRank}º entre ${totalStudents} peers do ${userMaxPeriod}º+ período</div>
+        <div style="color:var(--text-3);font-size:var(--t-xs);margin-top:.25rem;">Posição: ${userRank}º entre ${totalStudents} pares c/ mesma carga horária</div>
         <div style="margin-top:1rem;">${riskBadge(crRiskLevel)}</div>
       </div>
       <div style="background:var(--bg);border-radius:var(--r-md);height:12px;overflow:hidden;margin-top:.75rem;">
         <div style="height:100%;width:${Math.min(100, (userCR / 10) * 100)}%;background:${crMargin < 0 ? 'var(--danger)' : crMargin < 1.5 ? 'var(--warning)' : 'var(--success)'};border-radius:var(--r-md);"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:var(--t-xs);color:var(--text-3);margin-top:.25rem;"><span>0</span><span>Mínimo ${CR_MIN_REQUIRED}</span><span>10</span></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Resumo de Risco</div>
-      <div style="display:flex;flex-direction:column;gap:.5rem;font-size:var(--t-sm);">
-        <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border);"><span>Disciplinas críticas (&lt;6)</span><strong style="color:${riskDiscs.length > 0 ? 'var(--danger)' : 'var(--success)'};">${riskDiscs.length}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border);"><span>Dependências em risco</span><strong style="color:${depWarnings.length > 0 ? 'var(--warning)' : 'var(--success)'};">${depWarnings.length}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border);"><span>Quedas consecutivas</span><strong style="color:${consecutiveDrops.length > 0 ? 'var(--warning)' : 'var(--success)'};">${consecutiveDrops.length}</strong></div>
-        <div style="display:flex;justify-content:space-between;padding:.5rem 0;"><span>Volatilidade (DP)</span><strong style="color:${gradeStdDev >= 1.8 ? 'var(--danger)' : gradeStdDev >= 1 ? 'var(--warning)' : 'var(--success)'};">${gradeStdDev.toFixed(2)}</strong></div>
-      </div>
+      <div style="display:flex;justify-content:space-between;font-size:var(--t-xs);color:var(--text-3);margin-top:.25rem;"><span>0</span><span>Mín. ${CR_MIN_REQUIRED}</span><span>10</span></div>
     </div>
   </div>
 </div>`;
@@ -1087,17 +1074,14 @@ function renderRisk(container, data) {
 // SECTION: SIMULADOR (item 2)
 // ─────────────────────────────────────────────
 function renderSimulator(container, data) {
-  const { userCR, completedPeriods, totalExpectedPeriods, statsPerPeriod, userMaxPeriod, allPeriods } = data;
-  // Períodos futuros = todos os períodos acima do máximo já cursado pelo aluno
+  const { userCR, totalExpectedPeriods, statsPerPeriod, userMaxPeriod } = data;
   const futurePeriods = [];
   for (var fp = userMaxPeriod + 1; fp <= totalExpectedPeriods; fp++) { futurePeriods.push(fp); }
   const remaining   = futurePeriods.length;
-  // sumCompleted: soma das médias dos períodos cursados (base para projeção)
   const sumCompleted = statsPerPeriod.filter(function(s) { return s.studentMean > 0; }).reduce(function(a, s) { return a + s.studentMean; }, 0);
 
   const slidersHTML = remaining > 0
     ? futurePeriods.map(function(p, i) {
-        // Already correct — p is the actual period number
         const phase = COURSE_PHASES.find(function(ph) { return ph.periods.includes(p); });
         return '<div style="margin-bottom:1.25rem;">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.375rem;">'
@@ -1118,17 +1102,17 @@ function renderSimulator(container, data) {
     { label: 'Excelência (média 9.5)', val: 9.5 },
   ];
 
-  const crNeeded7 = remaining > 0 ? (7.0 * totalExpectedPeriods - sumCompleted) / remaining : null; // meta por periodo futuro
+  const crNeeded7 = remaining > 0 ? (7.0 * totalExpectedPeriods - sumCompleted) / remaining : null;
 
   container.innerHTML = `
 <div class="page-header fade-2">
   <h1 class="page-title">Simulador de CR Final</h1>
-  <p class="page-sub">Projete seu coeficiente ao fim do curso com diferentes cenários de desempenho.</p>
+  <p class="page-sub">Projete seu coeficiente ao fim do curso com diferentes cenários.</p>
 </div>
 <div class="chart-section cols-2-1 fade-3">
   <div class="card">
     <div class="card-title">Configure os Próximos Períodos</div>
-    <p style="font-size:var(--t-sm);color:var(--text-3);margin-bottom:1.25rem;">Até o ${userMaxPeriod}º período concluído. Projetando <strong>${remaining}</strong> períodos futuros de <strong>${totalExpectedPeriods}</strong>.</p>
+    <p style="font-size:var(--t-sm);color:var(--text-3);margin-bottom:1.25rem;">Projetando <strong>${remaining}</strong> períodos futuros.</p>
     ${slidersHTML}
     ${remaining > 0 ? '<button onclick="window._simReset()" style="padding:.5rem 1rem;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface);color:var(--text-2);font-size:var(--t-sm);cursor:pointer;">↺ Resetar para 7.0</button>' : ''}
   </div>
@@ -1144,20 +1128,8 @@ function renderSimulator(container, data) {
         <div id="sim-progress" style="height:100%;width:${(userCR / 10) * 100}%;background:var(--primary);border-radius:var(--r-md);transition:width .4s;"></div>
       </div>
     </div>
-    <div class="card" style="margin-bottom:1rem;">
-      <div class="card-title">Cenários Rápidos</div>
-      <div style="display:flex;flex-direction:column;gap:.5rem;">
-        ${scenarios.map(function(sc) {
-          const proj = remaining > 0 ? (sumCompleted + sc.val * remaining) / totalExpectedPeriods : userCR;
-          return '<div style="display:flex;justify-content:space-between;align-items:center;padding:.625rem .875rem;background:var(--bg);border-radius:var(--r-md);font-size:var(--t-sm);">'
-            + '<span>' + sc.label + '</span>'
-            + '<strong style="font-family:var(--mono);color:' + (proj >= 7 ? 'var(--success)' : proj >= CR_MIN_REQUIRED ? 'var(--warning)' : 'var(--danger)') + ';">' + proj.toFixed(2) + '</strong>'
-            + '</div>';
-        }).join('')}
-      </div>
-    </div>
     <div class="card">
-      <div class="card-title">Nota Mínima p/ CR ≥ 7.0</div>
+      <div class="card-title">Nota Mín. p/ CR ≥ 7.0</div>
       ${crNeeded7 !== null
         ? '<div style="font-family:var(--mono);font-size:2rem;font-weight:600;color:' + (crNeeded7 > 10 ? 'var(--danger)' : crNeeded7 > 8 ? 'var(--warning)' : 'var(--success)') + ';">' + Math.max(0, crNeeded7).toFixed(2) + '</div>'
           + '<div style="font-size:var(--t-xs);color:var(--text-3);">por período restante' + (crNeeded7 > 10 ? ' — meta impossível' : '') + '</div>'
@@ -1199,13 +1171,13 @@ function renderDisciplines(container, data) {
   container.innerHTML = `
 <div class="page-header fade-2">
   <h1 class="page-title">Disciplinas</h1>
-  <p class="page-sub">Análise detalhada de todas as disciplinas cursadas.</p>
+  <p class="page-sub">Análise detalhada de todas as disciplinas efetivamente cursadas.</p>
 </div>
-<div class="filter-bar fade-3" id="filter-bar">
+<div class="filter-bar fade-3" id="filter-bar" style="display:flex;flex-wrap:wrap;gap:1rem;">
   <div class="filter-group"><span class="filter-label">Período</span><div class="filter-chips" id="chips-periods"></div></div>
-  <div class="filter-sep"></div>
+  <div class="filter-sep" style="border-left:1px solid var(--border);height:20px;align-self:center;"></div>
   <div class="filter-group"><span class="filter-label">Área</span><div class="filter-chips" id="chips-categories"></div></div>
-  <span class="filter-summary" id="filter-summary" style="margin-left:auto;font-size:var(--t-xs);color:var(--text-3);"></span>
+  <span class="filter-summary" id="filter-summary" style="margin-left:auto;font-size:var(--t-xs);color:var(--text-3);white-space:nowrap;"></span>
   <button id="filter-reset" style="align-self:center;padding:5px 12px;border-radius:99px;border:1.5px solid var(--border);background:transparent;color:var(--text-3);font-size:var(--t-xs);font-weight:600;cursor:pointer;">✕ Limpar</button>
 </div>
 <div class="card fade-4" style="margin-bottom:1rem;">
@@ -1216,12 +1188,12 @@ function renderDisciplines(container, data) {
   <div class="card-title" id="table-title">Prontuário Detalhado</div>
   <table class="data-table" id="data-table">
     <thead><tr>
-      <th data-sort="name" style="cursor:pointer;">Disciplina <i class="sort-icon">↕</i></th>
-      <th data-sort="period" style="cursor:pointer;">Período <i class="sort-icon">↕</i></th>
-      <th data-sort="category" style="cursor:pointer;">Área <i class="sort-icon">↕</i></th>
-      <th data-sort="userGrade" style="cursor:pointer;">Sua Nota <i class="sort-icon">↕</i></th>
-      <th data-sort="cohortMean" style="cursor:pointer;">Média Turma <i class="sort-icon">↕</i></th>
-      <th data-sort="diff" style="cursor:pointer;">Δ <i class="sort-icon">↕</i></th>
+      <th data-sort="name" style="cursor:pointer;white-space:nowrap;">Disciplina <i class="sort-icon">↕</i></th>
+      <th data-sort="period" style="cursor:pointer;white-space:nowrap;">Período <i class="sort-icon">↕</i></th>
+      <th data-sort="category" style="cursor:pointer;white-space:nowrap;">Área <i class="sort-icon">↕</i></th>
+      <th data-sort="userGrade" style="cursor:pointer;white-space:nowrap;">Sua Nota <i class="sort-icon">↕</i></th>
+      <th data-sort="cohortMean" style="cursor:pointer;white-space:nowrap;">Turma <i class="sort-icon">↕</i></th>
+      <th data-sort="diff" style="cursor:pointer;white-space:nowrap;">Δ <i class="sort-icon">↕</i></th>
       <th>Status</th>
     </tr></thead>
     <tbody></tbody>
@@ -1268,7 +1240,7 @@ function renderDiscContent(data) {
   renderTable(data);
   updateFilterSummary();
   const title = document.getElementById('table-title');
-  if (title) title.textContent = 'Prontuário Detalhado · ' + data.disciplines.length + ' disciplina(s)';
+  if (title) title.textContent = 'Prontuário Detalhado · ' + data.disciplines.length + ' disciplina(s) cursada(s)';
 }
 
 function renderTable(fdata) {
@@ -1285,7 +1257,7 @@ function renderTable(fdata) {
     return (typeof a[key] === 'string' ? a[key].localeCompare(b[key], 'pt') : a[key] - b[key]) * (dir === 'asc' ? 1 : -1);
   }).map(function(d) {
     return '<tr>'
-      + '<td>' + d.name + '</td>'
+      + '<td style="white-space:nowrap;">' + d.name + '</td>'
       + '<td class="mono">' + d.period + 'º</td>'
       + '<td><span style="display:inline-flex;padding:2px 8px;border-radius:99px;font-size:var(--t-xs);font-weight:600;background:' + CAT_COLORS[d.category] + '22;color:' + CAT_COLORS[d.category] + ';">' + d.category + '</span></td>'
       + '<td class="mono" style="font-weight:600;color:' + (d.userGrade < 6 ? 'var(--danger)' : d.userGrade >= 8.5 ? 'var(--success)' : 'var(--text)') + '">' + d.userGrade.toFixed(1) + '</td>'
@@ -1309,7 +1281,7 @@ function updateFilterSummary() {
   const c = STATE.activeFilters.categories.size;
   el.innerHTML = (p || c)
     ? 'Filtrado: <strong>' + [p && p + ' período(s)', c && c + ' área(s)'].filter(Boolean).join(' · ') + '</strong>'
-    : 'Exibindo <strong>todos</strong>';
+    : 'Exibindo <strong>todas</strong>';
 }
 
 // ─────────────────────────────────────────────
@@ -1345,17 +1317,6 @@ function renderNotes(container, data) {
       + '<button onclick="window._saveNote(\'' + p + '\')" style="margin-top:.5rem;width:100%;padding:.5rem;border:none;border-radius:var(--r-md);background:var(--primary);color:#fff;font-size:var(--t-sm);font-weight:600;cursor:pointer;">Salvar</button>'
       + '</div>';
   }).join('')}
-</div>
-<div class="card fade-4" style="margin-top:1rem;">
-  <div class="card-title">Anotação Geral do Curso</div>
-  <textarea id="note-geral" rows="4" placeholder="Reflexões sobre sua trajetória, metas, estratégias de estudo..."
-    style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:var(--r-md);font:var(--t-sm) var(--font);color:var(--text);background:var(--bg);resize:vertical;outline:none;"
-    onfocus="this.style.borderColor='var(--primary)'" onblur="this.style.borderColor='var(--border)'"
-  >${notes['geral'] || ''}</textarea>
-  <div style="display:flex;align-items:center;gap:.75rem;margin-top:.5rem;">
-    <button onclick="window._saveNote('geral')" style="padding:.5rem 1.25rem;border:none;border-radius:var(--r-md);background:var(--primary);color:#fff;font-size:var(--t-sm);font-weight:600;cursor:pointer;">Salvar</button>
-    <span id="saved-geral" style="font-size:var(--t-xs);color:var(--success);opacity:0;transition:opacity .3s;">✓ Salvo</span>
-  </div>
 </div>`;
 
   window._saveNote = function(key) {
@@ -1401,47 +1362,27 @@ function exportPDF() {
     + '</div>'
     + '<div class="kpis">'
     + '<div class="kpi"><div class="kpi-lbl">CR Global</div><div class="kpi-v">' + userCR.toFixed(2) + '</div></div>'
-    + '<div class="kpi"><div class="kpi-lbl">Posição</div><div class="kpi-v">' + userRank + 'º / ' + totalStudents + ' peers</div></div>'
-    + '<div class="kpi"><div class="kpi-lbl">Percentil</div><div class="kpi-v">Superou ' + userPercentile + '% dos peers</div></div>'
+    + '<div class="kpi"><div class="kpi-lbl">Posição Turma</div><div class="kpi-v">' + userRank + 'º / ' + totalStudents + ' peers</div></div>'
+    + '<div class="kpi"><div class="kpi-lbl">Percentil</div><div class="kpi-v">Superou ' + userPercentile + '%</div></div>'
     + '<div class="kpi"><div class="kpi-lbl">Margem CR Mín.</div><div class="kpi-v ' + (crMargin < 0 ? 'bad' : 'ok') + '">' + (crMargin >= 0 ? '+' : '') + crMargin.toFixed(2) + '</div></div>'
     + '</div>'
     + '<h2>Evolução por Período</h2>'
-    + '<table><thead><tr><th>Período</th><th>Fase</th><th>Sua Média</th><th>Média Turma</th><th>Δ</th><th>Ranking</th></tr></thead><tbody>'
+    + '<table><thead><tr><th>Período</th><th>Disciplinas Cursadas</th><th>Sua Média</th><th>Média Turma (Comparável)</th><th>Δ</th><th>Ranking</th></tr></thead><tbody>'
     + statsPerPeriod.filter(function(s) { return s.studentMean > 0; }).map(function(s) {
-        const ph   = COURSE_PHASES.find(function(ph) { return ph.periods.includes(s.period); });
         const diff = s.studentMean - s.cohortMean;
-        return '<tr><td>' + s.period + 'º</td><td>' + (ph ? ph.label : '—') + '</td><td><strong>' + s.studentMean.toFixed(2) + '</strong></td><td>' + s.cohortMean.toFixed(2) + '</td><td class="' + (diff >= 0 ? 'ok' : 'bad') + '">' + (diff > 0 ? '+' : '') + diff.toFixed(2) + '</td><td>' + s.periodRank + 'º / ' + s.periodPeerCount + ' (Superou ' + s.periodPct + '%)</td></tr>';
+        return '<tr><td>' + s.period + 'º</td><td>' + s.taken + ' / ' + s.total + ' disc.</td><td><strong>' + s.studentMean.toFixed(2) + '</strong></td><td>' + s.cohortMean.toFixed(2) + '</td><td class="' + (diff >= 0 ? 'ok' : 'bad') + '">' + (diff > 0 ? '+' : '') + diff.toFixed(2) + '</td><td>' + s.periodRank + 'º / ' + s.periodPeerCount + '</td></tr>';
       }).join('')
     + '</tbody></table>'
-    + '<h2>Desempenho por Área</h2>'
-    + '<table><thead><tr><th>Área</th><th>Sua Média</th><th>Média Turma</th><th>Δ</th></tr></thead><tbody>'
-    + CAT_LABELS.map(function(c) {
-        const cs   = data.catStats[c];
-        const uM   = cs.uc ? cs.u / cs.uc : 0;
-        const cM   = cs.cc ? cs.c / cs.cc : 0;
-        const diff = uM - cM;
-        return '<tr><td>' + c + '</td><td><strong>' + uM.toFixed(2) + '</strong></td><td>' + cM.toFixed(2) + '</td><td class="' + (diff >= 0 ? 'ok' : 'bad') + '">' + (diff > 0 ? '+' : '') + diff.toFixed(2) + '</td></tr>';
-      }).join('')
-    + '</tbody></table>'
-    + '<h2>Prontuário Completo de Disciplinas</h2>'
-    + '<table><thead><tr><th>Disciplina</th><th>Período</th><th>Área</th><th>Sua Nota</th><th>Turma</th><th>Δ</th><th>Status</th></tr></thead><tbody>'
+    + '<h2>Prontuário de Disciplinas</h2>'
+    + '<table><thead><tr><th>Disciplina</th><th>Período</th><th>Sua Nota</th><th>Turma</th><th>Δ</th></tr></thead><tbody>'
     + disciplines.slice().sort(function(a, b) { return a.period - b.period || a.name.localeCompare(b.name, 'pt'); }).map(function(d) {
-        return '<tr><td>' + d.name + '</td><td>' + d.period + 'º</td><td>' + d.category + '</td>'
+        return '<tr><td>' + d.name + '</td><td>' + d.period + 'º</td>'
           + '<td class="' + (d.userGrade < 6 ? 'bad' : d.userGrade >= 8.5 ? 'ok' : '') + '">' + d.userGrade.toFixed(1) + '</td>'
           + '<td>' + d.cohortMean.toFixed(1) + '</td>'
-          + '<td class="' + (d.diff >= 0 ? 'ok' : 'bad') + '">' + (d.diff > 0 ? '+' : '') + d.diff.toFixed(2) + '</td>'
-          + '<td class="' + (d.userGrade < 6 ? 'bad' : 'ok') + '">' + (d.userGrade < 6 ? 'Atenção' : 'Adequado') + '</td></tr>';
+          + '<td class="' + (d.diff >= 0 ? 'ok' : 'bad') + '">' + (d.diff > 0 ? '+' : '') + d.diff.toFixed(2) + '</td></tr>';
       }).join('')
     + '</tbody></table>'
-    + (Object.keys(STATE.notes).some(function(k) { return STATE.notes[k]; })
-        ? '<h2>Anotações Pessoais</h2>'
-          + Object.entries(STATE.notes).filter(function(e) { return e[1]; }).map(function(e) {
-              return '<div style="margin-bottom:1rem;padding:.75rem;background:#f5f6fa;border-radius:8px;border-left:3px solid #2563eb;">'
-                + '<strong style="font-size:.8125rem;">' + (e[0] === 'geral' ? 'Geral' : e[0] + 'º Período') + '</strong>'
-                + '<p style="margin:.25rem 0 0;color:#475569;">' + e[1] + '</p></div>';
-            }).join('')
-        : '')
-    + '<div class="footer"><span>MedDash Analytics · ' + now + '</span><span>CR Mínimo: ' + CR_MIN_REQUIRED.toFixed(1) + ' · Volatilidade (DP): ' + gradeStdDev.toFixed(2) + '</span></div>'
+    + '<div class="footer"><span>MedDash Analytics · ' + now + '</span><span>Comparação baseada em disciplinas cursadas.</span></div>'
     + '</body></html>');
   pw.document.close();
 }
